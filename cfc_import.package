@@ -1,0 +1,407 @@
+/*
+create or replace PACKAGE CFC_IMPORT AUTHID CURRENT_USER AS 
+TYPE T_AGAZAT_IMP IS TABLE OF VARCHAR2(5 CHAR) INDEX BY PLS_INTEGER;
+TYPE t_out_alszektor IS TABLE OF VARCHAR2(50 CHAR) INDEX BY PLS_INTEGER;
+procedure gfcf_imp_alt(GFCF_EV VARCHAR2, v_gfcf_table VARCHAR2, v_gfcf_ar_table VARCHAR2, v_inv2_table VARCHAR2, v_lifetime_table VARCHAR2, v_arindex_1999 VARCHAR2, v_szektor VARCHAR2, v_eszkozcsp VARCHAR2, v_gfcf_name VARCHAR2, v_alszektor VARCHAR2, eszkoz VARCHAR2);
+procedure gfcf_imp_egyedi(GFCF_EV VARCHAR2, v_gfcf_table VARCHAR2, v_gfcf_ar_table VARCHAR2, v_inv2_table VARCHAR2, v_lifetime_table VARCHAR2, v_arindex_1999 VARCHAR2, v_szektor VARCHAR2, v_eszkozcsp VARCHAR2, v_alszektor VARCHAR2, eszkoz VARCHAR2);
+
+
+END CFC_IMPORT;
+*/
+------------
+
+
+create or replace PACKAGE BODY CFC_IMPORT AS  
+v_out_schema VARCHAR(10) := 'PKD'; -- PKD séma -- mindenhova kell 
+V_AGAZAT_IMP T_AGAZAT_IMP;
+v_out_alszektor t_out_alszektor;
+
+
+-- GFCF import általános
+
+
+PROCEDURE gfcf_imp_alt(GFCF_EV VARCHAR2, v_gfcf_table VARCHAR2, v_gfcf_ar_table VARCHAR2, v_inv2_table VARCHAR2, v_lifetime_table VARCHAR2, v_arindex_1999 VARCHAR2, v_szektor VARCHAR2, v_eszkozcsp VARCHAR2, v_gfcf_name VARCHAR2, v_alszektor VARCHAR2, eszkoz VARCHAR2)  AS  
+
+procName VARCHAR2(30);
+v NUMERIC;
+GFCF_minus VARCHAR2(10) := ''|| GFCF_EV ||''-1;
+GFCF_plus VARCHAR2(10) := ''|| GFCF_EV ||''+1;
+
+--TYPE t_agazat_type IS TABLE OF INV2_LOTOF_93%ROWTYPE; 
+TYPE t_agazat_type IS TABLE OF AR_ALL_BAZIS_180904%ROWTYPE; 
+v_agazat_type t_agazat_type; 
+
+TYPE t_agazat_type_g IS TABLE OF INV2_ALL_T08_180904%ROWTYPE; 
+v_agazat_type_g t_agazat_type_g; 
+
+sql_statement VARCHAR2(500);
+v_arindex_table VARCHAR2(500);
+
+
+BEGIN
+procName := 'GFCF to INV2';
+v_arindex_table := ''||v_arindex_1999 ||'';
+
+-- korábban a bázis árindexbe írtuk be a kapott adatokat, az éles futásban a GFCF táblából már lánc árindexet kapunk, ezért a kapott adatot oda tesszük be
+-- 2. lépés: hozzunk létre egy új mezőt az aktuális árhoz az ÁR táblában
+
+	SELECT COUNT(*) INTO v FROM user_tab_cols WHERE column_name = UPPER('Y'|| GFCF_plus ||'_1999') AND table_name = ''|| v_arindex_1999 ||'';
+	
+	IF v=0 THEN
+		
+		EXECUTE IMMEDIATE'
+		ALTER TABLE '|| v_arindex_1999 ||'
+		ADD Y'|| GFCF_plus ||'_1999 NUMBER
+		'
+		; 
+	
+	END IF;
+	
+	
+	
+-- az ÁR táblában ki kell számolni az aktuális évre vonatkozó árindexet (forrás: GFCF_20xx_AR tábla értéke * az előző évi árindex értéke)
+
+FOR a IN 1..v_out_alszektor.COUNT LOOP  
+
+sql_statement := 'SELECT COUNT(*) FROM '|| v_arindex_1999 ||' WHERE ALSZEKTOR1 = '''|| v_out_alszektor(a) ||''' AND ESZKOZCSP = '''|| v_eszkozcsp ||''' ';
+EXECUTE IMMEDIATE sql_statement INTO v;
+IF v != 0 THEN
+	
+	sql_statement := 'SELECT * FROM '|| v_arindex_1999 ||' WHERE SZEKTOR = '''|| v_szektor ||''' AND ALSZEKTOR1 = '''|| v_out_alszektor(a) ||''' AND ESZKOZCSP = '''|| v_eszkozcsp ||''' '; 
+
+	EXECUTE IMMEDIATE sql_statement BULK COLLECT INTO v_agazat_type;
+
+	FOR a IN v_agazat_type.FIRST..v_agazat_type.LAST LOOP 
+		V_AGAZAT_IMP(a) := ''|| v_agazat_type(a).AGAZAT ||''; 
+	END LOOP;
+	
+		
+	FOR j IN 1..V_AGAZAT_IMP.COUNT LOOP  
+
+		EXECUTE IMMEDIATE ' 
+		UPDATE '|| v_out_schema ||'.'|| v_arindex_1999 ||'
+		SET Y'|| GFCF_plus ||'_1999 = 
+		(SELECT a.Y'|| GFCF_EV ||'_1999 * b.'|| v_gfcf_name ||'
+		FROM '|| v_out_schema ||'.'|| v_arindex_1999 ||' a
+		INNER JOIN '|| v_out_schema ||'.'|| v_gfcf_ar_table ||' b 
+		ON a.AGAZAT = b. AGAZAT 
+		WHERE a.AGAZAT = '''|| V_AGAZAT_IMP(j) ||'''
+		AND a.SZEKTOR = '''|| v_szektor ||''' AND a.ALSZEKTOR1 = '''|| v_out_alszektor(a) ||''' AND a.ESZKOZCSP = '''|| v_eszkozcsp ||''' 
+		)
+		WHERE AGAZAT = '|| V_AGAZAT_IMP(j) ||' AND SZEKTOR = '''|| v_szektor ||''' AND ALSZEKTOR1 = '''|| v_out_alszektor(a) ||''' AND ESZKOZCSP = '''|| v_eszkozcsp ||''' 
+		'
+		; 
+	
+	END LOOP;
+	
+END IF;
+	
+END LOOP;
+
+
+-- hozzuk létre a bázis árindex alapján (amit előbb egészítettünk ki az aktuális évvel) a lánc árindex táblát is újra
+
+CFC_ARINDEX.CFC_ARINDEX();
+	/*
+	
+	-- 3. lépés: a GFCF táblában létrehozunk egy JÁRMŰ oszlopot: 
+	-- S1311, S1313: (((BELFOLDI_JARMU + IMPORT_JARMU + HASZN_JARMU_VASARLAS) * 0.07) + (JARMU_ATVET * 0.07) + JARMU_PENZUGYI_LIZING)
+	-- S1314:  (((BELFOLDI_JARMU + IMPORT_JARMU + HASZN_JARMU_VASARLAS) * 0.068048) + (JARMU_ATVET * 0.040328) + JARMU_PENZUGYI_LIZING)
+	
+	
+	SELECT COUNT(*) INTO v FROM user_tab_cols WHERE column_name = UPPER('JARMU') AND table_name = ''|| v_gfcf_table ||'';
+	
+	IF v=0 THEN
+		
+		EXECUTE IMMEDIATE'
+		ALTER TABLE '|| v_gfcf_table ||'
+		ADD JARMU NUMBER
+		'
+		; 
+
+	END IF;
+	
+	IF ''|| v_alszektor ||'' != 'S1314' THEN
+		
+		EXECUTE IMMEDIATE'
+		UPDATE '|| v_gfcf_table ||'
+		SET JARMU = (((BELFOLDI_JARMU + IMPORT_JARMU + HASZN_JARMU_VASARLAS) * 0.07) + (JARMU_ATVET * 0.07) + JARMU_PENZUGYI_LIZING)
+		WHERE ALSZEKTOR = '''|| v_alszektor ||'''
+		'
+		;
+	
+	ELSE 
+	
+		EXECUTE IMMEDIATE'
+		UPDATE '|| v_gfcf_table ||'
+		SET JARMU = (((BELFOLDI_JARMU + IMPORT_JARMU + HASZN_JARMU_VASARLAS) * 0.068048) + (JARMU_ATVET * 0.040328) + JARMU_PENZUGYI_LIZING)
+		WHERE ALSZEKTOR = '''|| v_alszektor ||'''
+		'
+		;	
+	
+	END IF;
+	
+	-- 3/b. lépés: a GFCF táblában létrehozunk egy EPULET_CALC oszlopot: 
+	-- S1311, S1313: EPULET + (hasznalt_epulet_vasarlas * 0.04) + (epulet_atvet * 0.04) + epulet_penzugyi_lizing - LAKAS (a LAKAS-t csak a 68-as ágazatból kell kivonni)
+	-- S1314: EPULET + (hasznalt_epulet_vasarlas * 0.087359) + (epulet_atvet * 0.040309) + epulet_penzugyi_lizing
+	
+	SELECT COUNT(*) INTO v FROM user_tab_cols WHERE column_name = UPPER('EPULET_CALC') AND table_name = ''|| v_gfcf_table ||'';
+	
+	IF v=0 THEN
+	
+		EXECUTE IMMEDIATE'
+		ALTER TABLE '|| v_gfcf_table ||'
+		ADD EPULET_CALC NUMBER
+		'
+		;
+	
+	END IF;
+
+	IF ''|| v_alszektor ||'' != 'S1314' THEN
+	
+		EXECUTE IMMEDIATE'
+		UPDATE '|| v_gfcf_table ||'
+		SET EPULET_CALC = EPULET + (hasznalt_epulet_vasarlas * 0.04) + (epulet_atvet * 0.04) + epulet_penzugyi_lizing
+		WHERE ALSZEKTOR = '''|| v_alszektor ||'''
+		'
+		;
+	
+		EXECUTE IMMEDIATE'
+		UPDATE '|| v_gfcf_table ||'
+		SET EPULET_CALC = EPULET_CALC - LAKAS 
+		WHERE ALSZEKTOR = '''|| v_alszektor ||'''
+		AND AGAZAT = ''68''
+		'
+		;
+	
+	ELSE
+	
+		EXECUTE IMMEDIATE'
+		UPDATE '|| v_gfcf_table ||'
+		SET EPULET_CALC = EPULET + (hasznalt_epulet_vasarlas * 0.087359) + (epulet_atvet * 0.040309) + epulet_penzugyi_lizing
+		WHERE ALSZEKTOR = '''|| v_alszektor ||'''
+		'
+		;		
+	
+	END IF;
+	
+	
+	-- 3/c. lépés: itt kell meghívni a MACHINE_DIVIDE eljárást, mivel a gépekhez kapcsoldó adatokat is létre kell hozni
+			
+	MACHINE_DIVIDE.machine_divide();
+	
+	
+		
+			
+	-- 5. lépés: a GFCF tábla adatait 1999-es árra átszámítjuk
+	
+	
+-- log
+INSERT INTO logging (created_on, info, proc_name, message, backtrace)
+VALUES (TO_CHAR(CURRENT_TIMESTAMP, 'YYYY.MM.DD HH24:MI:SS.FF'), 'Info', ''|| procName ||'', 'Calculate 1999 price', '');
+
+-- hozzunk létre egy új mezőt 1999-es árhoz a GFCF táblában
+
+	SELECT COUNT(*) INTO v FROM user_tab_cols WHERE column_name = UPPER(''|| eszkoz ||'_1999') AND table_name = ''|| v_gfcf_table ||'';
+	
+	IF v=0 THEN
+		
+		EXECUTE IMMEDIATE'
+		ALTER TABLE '|| v_gfcf_table ||'
+		ADD '|| eszkoz ||'_1999 NUMBER
+		'
+		; 
+	
+	END IF;
+	
+	
+-- kiszámítjuk az 1999-es árat minden ágazatra	
+
+	sql_statement := 'SELECT * FROM '|| v_inv2_table ||' WHERE SZEKTOR = '''|| v_szektor ||''' AND ALSZEKTOR1 = '''|| v_alszektor ||''' AND ESZKOZCSP = '''|| v_eszkozcsp ||''' '; 
+
+	EXECUTE IMMEDIATE sql_statement BULK COLLECT INTO v_agazat_type_g;
+
+	FOR a IN v_agazat_type_g.FIRST..v_agazat_type_g.LAST LOOP 
+		V_AGAZAT_IMP(a) := ''|| v_agazat_type_g(a).AGAZAT ||''; 
+	END LOOP;
+
+	FOR j IN 1..V_AGAZAT_IMP.COUNT LOOP  
+
+		EXECUTE IMMEDIATE ' 
+		UPDATE '|| v_out_schema ||'.'|| v_gfcf_table ||'
+		SET '|| eszkoz ||'_1999 = 
+		(SELECT 
+			CASE b.Y'|| GFCF_EV ||'_1999
+				WHEN 0 THEN a.'|| eszkoz ||'
+				ELSE a.'|| eszkoz ||' / b.Y'|| GFCF_EV ||'_1999 
+			END as '|| eszkoz ||'_1999
+		
+		FROM '|| v_out_schema ||'.'|| v_gfcf_table ||' a
+		INNER JOIN '|| v_out_schema ||'.'|| v_arindex_1999 ||' b
+		ON a.AGAZAT = b. AGAZAT 
+		WHERE a.AGAZAT = '''|| V_AGAZAT_IMP(j) ||'''
+		AND a.SZEKTOR = '''|| v_szektor ||''' AND b.SZEKTOR = '''|| v_szektor ||''' AND a.ALSZEKTOR = '''|| v_alszektor ||''' AND b.ALSZEKTOR1 = '''|| v_alszektor ||''' AND b.ESZKOZCSP = '''|| v_eszkozcsp ||''' 
+		)
+		WHERE AGAZAT = '|| V_AGAZAT_IMP(j) ||' AND SZEKTOR = '''|| v_szektor ||''' AND ALSZEKTOR = '''|| v_alszektor ||'''  
+		'
+		;
+	
+	END LOOP;	
+		
+ 
+	--> 6.lépés: meglévő INV2 táblába történő beillesztés
+	
+-- log
+INSERT INTO logging (created_on, info, proc_name, message, backtrace)
+VALUES (TO_CHAR(CURRENT_TIMESTAMP, 'YYYY.MM.DD HH24:MI:SS.FF'), 'Info', ''|| procName ||'', 'Put in INV2', '');
+		
+	
+	SELECT COUNT(*) INTO v FROM user_tab_cols WHERE column_name = UPPER('Y'|| GFCF_EV ||'') AND table_name = ''|| v_inv2_table ||'';
+	
+	IF v=0 THEN
+				
+		EXECUTE IMMEDIATE'
+		ALTER TABLE '|| v_inv2_table ||'
+		ADD Y'|| GFCF_EV ||' NUMBER
+		'
+		; 
+	
+	END IF;	
+		
+	
+	-- szektoronként beillesztük a mezőbe az értékeket a GFCF táblából	
+	FOR k IN 1..V_AGAZAT_IMP.COUNT LOOP  
+	
+		EXECUTE IMMEDIATE '
+		UPDATE '|| v_out_schema ||'.'|| v_inv2_table ||'
+		SET Y'|| GFCF_EV ||' =
+		(SELECT '|| eszkoz ||'_1999 
+		FROM '|| v_out_schema ||'.'|| v_gfcf_table ||' 
+		WHERE AGAZAT = '''|| V_AGAZAT_IMP(k) ||''' AND SZEKTOR = '''|| v_szektor ||''' AND ALSZEKTOR = '''|| v_alszektor ||''' 
+		)
+		WHERE AGAZAT = '''|| V_AGAZAT_IMP(k) ||''' AND SZEKTOR = '''|| v_szektor ||''' AND ALSZEKTOR1 = '''|| v_alszektor ||''' AND  ESZKOZCSP = '''|| v_eszkozcsp ||'''
+		'
+		;
+				
+	END LOOP;
+		
+INSERT INTO logging (created_on, info, proc_name, message, backtrace)
+VALUES (TO_CHAR(CURRENT_TIMESTAMP, 'YYYY.MM.DD HH24:MI:SS.FF'), 'Info', ''|| procName ||'', 'END', '');
+
+-- 7. lépés: az LT táblát is még ki kell egészíteni, az aktuális évbe be kell másolni a tavalyi év adatait
+
+	SELECT COUNT(*) INTO v FROM user_tab_cols WHERE column_name = UPPER('Y'|| GFCF_EV ||'') AND table_name = ''|| v_lifetime_table ||'';
+	
+	IF v=0 THEN
+				
+		EXECUTE IMMEDIATE'
+		ALTER TABLE '|| v_lifetime_table ||'
+		ADD Y'|| GFCF_EV ||' NUMBER
+		'
+		; 
+	
+	END IF;	
+
+	EXECUTE IMMEDIATE'
+	UPDATE '|| v_lifetime_table ||'
+	SET Y'|| GFCF_EV ||' = Y'|| GFCF_minus ||'
+	'
+	;
+
+	*/
+END gfcf_imp_alt;
+
+
+
+-- GFCF import egyedi
+
+PROCEDURE gfcf_imp_egyedi(GFCF_EV VARCHAR2, v_gfcf_table VARCHAR2, v_gfcf_ar_table VARCHAR2, v_inv2_table VARCHAR2, v_lifetime_table VARCHAR2, v_arindex_1999 VARCHAR2, v_szektor VARCHAR2, v_eszkozcsp VARCHAR2, v_alszektor VARCHAR2, eszkoz VARCHAR2)  AS  
+procName VARCHAR2(30);
+
+TYPE t_agazat_type IS TABLE OF INV2_LOTOF_93%ROWTYPE; 
+v_agazat_type t_agazat_type; 
+sql_statement VARCHAR2(500);
+
+BEGIN
+procName := 'GFCF to INV2 unique';
+
+sql_statement := 'SELECT * FROM '|| v_inv2_table ||' WHERE SZEKTOR = '''|| v_szektor ||''' AND ALSZEKTOR1 = '''|| v_alszektor ||''' AND ESZKOZCSP = '''|| v_eszkozcsp ||''' '; 
+
+EXECUTE IMMEDIATE sql_statement BULK COLLECT INTO v_agazat_type;
+
+FOR a IN v_agazat_type.FIRST..v_agazat_type.LAST LOOP 
+	V_AGAZAT_IMP(a) := ''|| v_agazat_type(a).AGAZAT ||''; 
+END LOOP;
+
+
+-- log
+INSERT INTO logging (created_on, info, proc_name, message, backtrace)
+VALUES (TO_CHAR(CURRENT_TIMESTAMP, 'YYYY.MM.DD HH24:MI:SS.FF'), 'Info', ''|| procName ||'', 'STARTING', '');
+
+	-- 1. lépés: 1999-es árra történő átszámítás
+	
+-- log
+INSERT INTO logging (created_on, info, proc_name, message, backtrace)
+VALUES (TO_CHAR(CURRENT_TIMESTAMP, 'YYYY.MM.DD HH24:MI:SS.FF'), 'Info', ''|| procName ||'', 'Calculate 1999 price', '');
+
+	
+	FOR j IN 1..V_AGAZAT_IMP.COUNT LOOP  
+
+		EXECUTE IMMEDIATE ' 
+		UPDATE '|| v_out_schema ||'.'|| v_gfcf_table ||'
+		SET count_szoroz_1999 = 
+		(SELECT 
+			CASE b.Y'|| GFCF_EV ||'_1999
+				WHEN 0 THEN a.Y'|| GFCF_EV ||'
+				ELSE a.Y'|| GFCF_EV ||' / b.Y'|| GFCF_EV ||'_1999 
+			END as count_szoroz_1999
+		
+		FROM '|| v_out_schema ||'.'|| v_gfcf_table ||' a
+		INNER JOIN '|| v_out_schema ||'.'|| v_arindex_1999 ||' b
+		ON a.AGAZAT = b. AGAZAT 
+		WHERE a.AGAZAT = '''|| V_AGAZAT_IMP(j) ||'''
+		AND a.SZEKTOR = '''|| v_szektor ||''' AND b.SZEKTOR = '''|| v_szektor ||''' AND b.ESZKOZCSP = '''|| v_eszkozcsp ||'''
+		)
+		WHERE AGAZAT = '|| V_AGAZAT_IMP(j) ||' AND SZEKTOR = '''|| v_szektor ||'''
+		'
+		; 
+	
+	END LOOP;	
+ 
+	--> 2.lépés: meglévő INV2 táblába történő beillesztés
+	
+-- log
+INSERT INTO logging (created_on, info, proc_name, message, backtrace)
+VALUES (TO_CHAR(CURRENT_TIMESTAMP, 'YYYY.MM.DD HH24:MI:SS.FF'), 'Info', ''|| procName ||'', 'Put in INV2', '');
+		
+	FOR k IN 1..V_AGAZAT_IMP.COUNT LOOP  
+	
+		EXECUTE IMMEDIATE '
+		UPDATE '|| v_out_schema ||'.'|| v_inv2_table ||'
+		SET Y'|| GFCF_EV ||' =
+		(SELECT COUNT_SZOROZ_1999 
+		FROM '|| v_out_schema ||'.'|| v_gfcf_table ||' 
+		WHERE AGAZAT = '''|| V_AGAZAT_IMP(k) ||''' AND SZEKTOR = '''|| v_szektor ||''' 
+		)
+		WHERE AGAZAT = '''|| V_AGAZAT_IMP(k) ||''' AND SZEKTOR = '''|| v_szektor ||''' 
+		'
+		;
+		
+	
+		
+	END LOOP;
+		
+	--<	
+INSERT INTO logging (created_on, info, proc_name, message, backtrace)
+VALUES (TO_CHAR(CURRENT_TIMESTAMP, 'YYYY.MM.DD HH24:MI:SS.FF'), 'Info', ''|| procName ||'', 'END', '');
+
+
+END gfcf_imp_egyedi;
+
+BEGIN
+
+v_out_alszektor(1) := 'S1311';
+v_out_alszektor(2) := 'S1313';
+v_out_alszektor(3) := 'S1314'; -- TB
+
+END;
