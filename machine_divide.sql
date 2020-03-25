@@ -56,10 +56,10 @@ IF calc = '0' THEN
 		FOR j IN 1..v_agazat_type_gfcf.COUNT LOOP  
 	
 			EXECUTE IMMEDIATE'
-			UPDATE PKD.'|| table_gfcf_inp ||'
+			UPDATE PKD19.'|| table_gfcf_inp ||'
 			SET GEP =
 			(SELECT (NVL(BELFOLDI_GEP, 0) + NVL(IMPORT_GEP, 0)) + (NVL(HASZN_GEP_VASARLAS, 0) * 0.07) + (NVL(GEP_ATVET, 0) * 0.07) + NVL(GEP_PENZUGYI_LIZING, 0)
-			FROM PKD.'|| table_gfcf_inp ||'
+			FROM PKD19.'|| table_gfcf_inp ||'
 			WHERE alszektor = '''|| V_SZEKTOR(a) ||'''
 			AND AGAZAT = '''|| v_agazat_type_gfcf(j) ||''')
 			WHERE alszektor = '''|| V_SZEKTOR(a) ||'''
@@ -79,10 +79,10 @@ IF calc = '0' THEN
 		FOR j IN 1..v_agazat_type_gfcf.COUNT LOOP  
 	
 			EXECUTE IMMEDIATE'
-			UPDATE PKD.'|| table_gfcf_inp ||'
+			UPDATE PKD19.'|| table_gfcf_inp ||'
 			SET GEP =
 			(SELECT (NVL(BELFOLDI_GEP, 0) + NVL(IMPORT_GEP, 0)) + (NVL(HASZN_GEP_VASARLAS, 0) * 0.066509) + (NVL(GEP_ATVET, 0) * 0.066509) + NVL(GEP_PENZUGYI_LIZING, 0)
-			FROM PKD.'|| table_gfcf_inp ||'
+			FROM PKD19.'|| table_gfcf_inp ||'
 			WHERE alszektor = ''S1314''
 			AND AGAZAT = '''|| v_agazat_type_gfcf(j) ||''')
 			WHERE alszektor = ''S1314''
@@ -96,9 +96,9 @@ IF calc = '0' THEN
 	-- 2. lépés: S1311 esetén a fegyvert ki kell vonni a 841-ből
 		
 		EXECUTE IMMEDIATE'
-		UPDATE PKD.'|| table_gfcf_inp ||'
+		UPDATE PKD19.'|| table_gfcf_inp ||'
 		SET GEP =
-		(SELECT NVL(GEP, 0) - (SELECT NVL(sum(FEGYVER), 0) FROM PKD.'|| table_gfcf_inp ||' 
+		(SELECT NVL(GEP, 0) - (SELECT NVL(sum(FEGYVER), 0) FROM PKD19.'|| table_gfcf_inp ||' 
 		WHERE AGAZAT IN (''841'', ''842'', ''843'', ''844'', ''845'') 
 		AND alszektor = ''S1311'')
 		FROM '|| table_gfcf_inp ||' 
@@ -123,11 +123,11 @@ FOR a IN V_SZEKTOR.FIRST..V_SZEKTOR.LAST LOOP
 	FOR j IN 1..v_agazat_type.COUNT LOOP  
 					
 		EXECUTE IMMEDIATE'
-		UPDATE PKD.'|| table_gfcf_inp ||' 
+		UPDATE PKD19.'|| table_gfcf_inp ||' 
 		SET TARTOSGEP = 
 		(SELECT (NVL(a.GEP, 0) * NVL(b.TARTOSGEP, 0))
-		FROM PKD.'|| table_gfcf_inp ||' a
-		INNER JOIN PKD.'|| table_rate_m ||' b
+		FROM PKD19.'|| table_gfcf_inp ||' a
+		INNER JOIN PKD19.'|| table_rate_m ||' b
 		ON a.AGAZAT = b.AGAZAT 
 		AND a.alszektor = b.alszektor
 		--WHERE b.TARTOSGEP != ''1''
@@ -145,11 +145,11 @@ FOR a IN V_SZEKTOR.FIRST..V_SZEKTOR.LAST LOOP
 	FOR j IN 1..v_agazat_type.COUNT LOOP  
 					
 		EXECUTE IMMEDIATE'
-		UPDATE PKD.'|| table_gfcf_inp ||' 
+		UPDATE PKD19.'|| table_gfcf_inp ||' 
 		SET GYORSGEP = 
 		(SELECT (NVL(a.GEP, 0) * NVL(b.GYORSGEP, 0))
-		FROM PKD.'|| table_gfcf_inp ||' a
-		INNER JOIN PKD.'|| table_rate_m ||' b
+		FROM PKD19.'|| table_gfcf_inp ||' a
+		INNER JOIN PKD19.'|| table_rate_m ||' b
 		ON a.AGAZAT = b.AGAZAT 
 		AND a.alszektor = b.alszektor
 		--WHERE b.TARTOSGEP != ''1''
@@ -173,9 +173,9 @@ END LOOP;
 	FOR j IN 1..v_agazat_type_gfcf.COUNT LOOP  
 
 		EXECUTE IMMEDIATE'
-		UPDATE PKD.'|| table_gfcf_inp ||' 
+		UPDATE PKD19.'|| table_gfcf_inp ||' 
 		SET TARTOSGEP = (SELECT NVL(GEP, 0)
-		FROM PKD.'|| table_gfcf_inp ||' 
+		FROM PKD19.'|| table_gfcf_inp ||' 
 		WHERE alszektor = ''S15''
 		AND AGAZAT = '|| v_agazat_type_gfcf(j) ||')
 		WHERE alszektor = ''S15''

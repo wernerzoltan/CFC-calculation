@@ -133,10 +133,10 @@ v2 NUMERIC; --
 v_out_szektor VARCHAR2(50);
 v_out_alszektor VARCHAR2(50);
 
-cfc_imputalt VARCHAR2(50) := 'CFC_IMPUTALT_99_F_V'; -- imputált tábla értékei
-cfc_lakas VARCHAR2(50) := 'CFC_GRS_NET_LAKAS_MEZO'; -- LAKAS, MEZŐ értékek
-cfc_besorolt VARCHAR2(50) := 'CFC_BES_VALL_F'; -- BESOROLT_VALL tábla 
-cfc_besorolt_a VARCHAR2(50) := 'CFC_BES_VALL_KLASSZ_ARANY'; -- BESOROLT_VALL arány tábla 
+cfc_imputalt VARCHAR2(50) := 'C_IMP_IMPUTALT'; -- imputált tábla értékei
+cfc_lakas VARCHAR2(50) := 'C_IMP_LAKAS_MEZO'; -- LAKAS, MEZŐ értékek
+cfc_besorolt VARCHAR2(50) := 'C_IMP_BES_VALL'; -- BESOROLT_VALL tábla 
+cfc_besorolt_a VARCHAR2(50) := 'C_IMP_BES_VALL_ARANY'; -- BESOROLT_VALL arány tábla 
 bes_vall_eszkoz VARCHAR2(50); 
 bes_vall_ertek NUMBER;
 bes_vall_ertek1 NUMBER;
@@ -185,9 +185,9 @@ END IF;
 
 
 
- PKD.TRUNCATE_TABLE(''|| v_out_table ||'');
- PKD.TRUNCATE_TABLE(''|| v_out_table_all ||'');
- PKD.TRUNCATE_TABLE(''|| v_out_table_mod ||'');
+ PKD19.TRUNCATE_TABLE(''|| v_out_table ||'');
+ PKD19.TRUNCATE_TABLE(''|| v_out_table_all ||'');
+ PKD19.TRUNCATE_TABLE(''|| v_out_table_mod ||'');
 
 
 -- 1. lépés: az OUTPUT táblába betöltjük az alap értékeket
@@ -198,7 +198,7 @@ FOR s IN v_szektorok.FIRST..v_szektorok.LAST LOOP
 
 FOR z IN v_out_cfc.FIRST..v_out_cfc.LAST LOOP
 
-sql_statement := 'SELECT COUNT(*) FROM PKD.'|| v_out_table ||' WHERE ALSZEKTOR = '''|| v_szektorok(s) ||''' AND CFC_NET_GRS = '''|| v_out_cfc(z) ||''' ';
+sql_statement := 'SELECT COUNT(*) FROM PKD19.'|| v_out_table ||' WHERE ALSZEKTOR = '''|| v_szektorok(s) ||''' AND CFC_NET_GRS = '''|| v_out_cfc(z) ||''' ';
 EXECUTE IMMEDIATE sql_statement INTO v;
 
 IF v = 0 THEN
@@ -242,7 +242,7 @@ FOR s IN v_szektorok.FIRST..v_szektorok.LAST LOOP
 
 		FOR b IN v_out_eszkcsp.FIRST..v_out_eszkcsp.LAST LOOP 
 
-			sql_statement := 'SELECT COUNT(*) FROM PKD.'|| v_out_eszkcsp(b) ||'_'|| v_in_year(x) ||' WHERE ALSZEKTOR = '''|| v_szektorok(s) ||''' ';
+			sql_statement := 'SELECT COUNT(*) FROM PKD19.'|| v_out_eszkcsp(b) ||'_'|| v_in_year(x) ||' WHERE ALSZEKTOR = '''|| v_szektorok(s) ||''' ';
 
 			EXECUTE IMMEDIATE sql_statement INTO v;
 
@@ -254,7 +254,7 @@ FOR s IN v_szektorok.FIRST..v_szektorok.LAST LOOP
 
 						EXECUTE IMMEDIATE
 						'DECLARE
-						CURSOR INS_OPS IS SELECT OUTPUT, ALSZEKTOR, AGAZAT, '|| F_V_99a(c) ||' as ONUM FROM PKD.'|| v_out_eszkcsp(b) ||'_'|| v_in_year(x) ||' WHERE ALSZEKTOR = '''|| v_szektorok(s) ||''' AND AGAZAT != ''SUM'' ;
+						CURSOR INS_OPS IS SELECT OUTPUT, ALSZEKTOR, AGAZAT, '|| F_V_99a(c) ||' as ONUM FROM PKD19.'|| v_out_eszkcsp(b) ||'_'|| v_in_year(x) ||' WHERE ALSZEKTOR = '''|| v_szektorok(s) ||''' AND AGAZAT != ''SUM'' ;
 						TYPE INS_ARRAY IS TABLE OF INS_OPS%ROWTYPE;
 						INS_OPS_ARRAY INS_ARRAY;
 						BEGIN
@@ -262,7 +262,7 @@ FOR s IN v_szektorok.FIRST..v_szektorok.LAST LOOP
 						LOOP
 						FETCH INS_OPS BULK COLLECT INTO INS_OPS_ARRAY;
 						FORALL I IN INS_OPS_ARRAY.FIRST..INS_OPS_ARRAY.LAST
-						UPDATE PKD.'|| v_out_table ||' 
+						UPDATE PKD19.'|| v_out_table ||' 
 						SET '|| v_out_eszkcsp(b) ||' = INS_OPS_ARRAY(I).ONUM
 						WHERE ALSZEKTOR = INS_OPS_ARRAY(I).ALSZEKTOR AND CFC_NET_GRS = INS_OPS_ARRAY(I).OUTPUT AND EV = '''|| v_in_year(x) ||''' AND AGAZAT = INS_OPS_ARRAY(I).AGAZAT AND F_V_99 = '''|| F_V_99(c) ||''';
 
@@ -294,7 +294,7 @@ dbms_output.put_line('3. lépés START: ' || systimestamp);
 
 -- 843-as ágazatot előzőleg kerekíteni kell:
 EXECUTE IMMEDIATE'
-UPDATE PKD.'|| v_out_table ||'
+UPDATE PKD19.'|| v_out_table ||'
 SET EPULET = ROUND(EPULET)
 WHERE AGAZAT = ''843'' 
 AND ALSZEKTOR IN (''S1311'', ''S1313'')
@@ -303,7 +303,7 @@ AND ALSZEKTOR IN (''S1311'', ''S1313'')
 
 -- 721, 722, 723-as ágazatot előzőleg kerekíteni kell:
 EXECUTE IMMEDIATE'
-UPDATE PKD.'|| v_out_table ||'
+UPDATE PKD19.'|| v_out_table ||'
 SET EPULET = ROUND(K_F)
 WHERE AGAZAT IN (''721'', ''722'', ''723'')
 AND ALSZEKTOR = ''S1311'' 
@@ -314,9 +314,9 @@ FOR a IN v_szektorok.FIRST..v_szektorok.LAST LOOP
 
                 -- 3 jegyű táblába áttesszük a 3 jegyű értékeket
                 EXECUTE IMMEDIATE'
-                INSERT INTO PKD.'|| v_out_table_all ||'
+                INSERT INTO PKD19.'|| v_out_table_all ||'
                 (SELECT ALSZEKTOR, AGAZAT, ROUND(EPULET), ROUND(TARTOSGEP), ROUND(GYORSGEP), ROUND(JARMU), ROUND(SZOFTVER), ROUND(SUM_CLASSIC), EV, F_V_99, CFC_NET_GRS, ROUND(ORIGINALS), ROUND(FOLDJAVITAS), ROUND(K_F), ROUND(FEGYVER), ROUND(OWNSOFT), ROUND(LAKAS), ROUND(NOE6), ROUND(KISERTEKU), ROUND(WIZZ), ROUND(MEZO), ROUND(TCF), ROUND(EGYEB_ORIG), ROUND(SUM_ALL), ROUND(BESOROLT_VALL), SZEKTOR
-                FROM PKD.'|| v_out_table ||'
+                FROM PKD19.'|| v_out_table ||'
                 WHERE AGAZAT IN (''361'', ''362'', ''421'', ''422'', ''711'', ''712'', ''721'', ''722'', ''723'', ''821'', ''822'', ''841'', ''842'', ''843'', ''844'', ''845'', ''846'', ''851'', ''852'', ''853'')
                 AND ALSZEKTOR = '''|| v_szektorok(a) ||'''
                 )
@@ -348,7 +348,7 @@ FOR z IN v_out_cfc.FIRST..v_out_cfc.LAST LOOP
                                                                                               SELECT COUNT(*) INTO v FROM user_tab_cols WHERE table_name = ''|| v_out_eszkcsp(a) ||'_'|| v_in_year(x) ||''; -- létezik az input tábla?
                                                                                               IF v != 0 THEN
 
-                                                                                                              PKD.AGAZAT_OSSZEVONAS('36', '''36'', ''361'', ''362''', '''361'', ''362''', ''|| v_out_table ||'', ''|| v_out_eszkcsp(a) ||'', ''|| F_V_99a(b) ||'', ''|| F_V_99(b) ||'', ''|| v_szektorok(s) ||'', ''|| v_out_eszkcsp_c(a) ||'', ''|| v_out_cfc(z) ||'', ''|| v_in_year(x) ||'');
+                                                                                                              PKD19.AGAZAT_OSSZEVONAS('36', '''36'', ''361'', ''362''', '''361'', ''362''', ''|| v_out_table ||'', ''|| v_out_eszkcsp(a) ||'', ''|| F_V_99a(b) ||'', ''|| F_V_99(b) ||'', ''|| v_szektorok(s) ||'', ''|| v_out_eszkcsp_c(a) ||'', ''|| v_out_cfc(z) ||'', ''|| v_in_year(x) ||'');
 
 
                                                                                               END IF; 
@@ -391,7 +391,7 @@ FOR z IN v_out_cfc.FIRST..v_out_cfc.LAST LOOP
                                                                                               SELECT COUNT(*) INTO v FROM user_tab_cols WHERE table_name = ''|| v_out_eszkcsp(a) ||'_'|| v_in_year(x) ||''; -- létezik az input tábla?
                                                                                               IF v != 0 THEN
 
-                                                                                                              PKD.AGAZAT_OSSZEVONAS('42', '''42'', ''421'', ''422''', '''421'', ''422''', ''|| v_out_table ||'', ''|| v_out_eszkcsp(a) ||'', ''|| F_V_99a(b) ||'', ''|| F_V_99(b) ||'', ''|| v_szektorok(s) ||'', ''|| v_out_eszkcsp_c(a) ||'', ''|| v_out_cfc(z) ||'', ''|| v_in_year(x) ||'');
+                                                                                                              PKD19.AGAZAT_OSSZEVONAS('42', '''42'', ''421'', ''422''', '''421'', ''422''', ''|| v_out_table ||'', ''|| v_out_eszkcsp(a) ||'', ''|| F_V_99a(b) ||'', ''|| F_V_99(b) ||'', ''|| v_szektorok(s) ||'', ''|| v_out_eszkcsp_c(a) ||'', ''|| v_out_cfc(z) ||'', ''|| v_in_year(x) ||'');
 
 
                                                                                               END IF;
@@ -399,14 +399,14 @@ FOR z IN v_out_cfc.FIRST..v_out_cfc.LAST LOOP
                                                                                               SELECT COUNT(*) INTO v FROM user_tab_cols WHERE table_name = ''|| v_out_eszkcsp(a) ||'_'|| v_in_year(x) ||''; -- létezik az input tábla?
                                                                                               IF v != 0 THEN
 
-                                                                                              PKD.AGAZAT_OSSZEVONAS('71', '''71'', ''711'', ''712''', '''711'', ''712''', ''|| v_out_table ||'', ''|| v_out_eszkcsp(a) ||'', ''|| F_V_99a(b) ||'', ''|| F_V_99(b) ||'', ''|| v_szektorok(s) ||'', ''|| v_out_eszkcsp_c(a) ||'', ''|| v_out_cfc(z) ||'', ''|| v_in_year(x) ||'');
+                                                                                              PKD19.AGAZAT_OSSZEVONAS('71', '''71'', ''711'', ''712''', '''711'', ''712''', ''|| v_out_table ||'', ''|| v_out_eszkcsp(a) ||'', ''|| F_V_99a(b) ||'', ''|| F_V_99(b) ||'', ''|| v_szektorok(s) ||'', ''|| v_out_eszkcsp_c(a) ||'', ''|| v_out_cfc(z) ||'', ''|| v_in_year(x) ||'');
 
                                                                                               END IF;
 
                                                                                               SELECT COUNT(*) INTO v FROM user_tab_cols WHERE table_name = ''|| v_out_eszkcsp(a) ||'_'|| v_in_year(x) ||''; -- létezik az input tábla?
                                                                                               IF v != 0 THEN
 
-                                                                                                              PKD.AGAZAT_OSSZEVONAS('82', '''82'', ''821'', ''822''', '''821'', ''822''', ''|| v_out_table ||'', ''|| v_out_eszkcsp(a) ||'', ''|| F_V_99a(b) ||'', ''|| F_V_99(b) ||'', ''|| v_szektorok(s) ||'', ''|| v_out_eszkcsp_c(a) ||'', ''|| v_out_cfc(z) ||'', ''|| v_in_year(x) ||'');
+                                                                                                              PKD19.AGAZAT_OSSZEVONAS('82', '''82'', ''821'', ''822''', '''821'', ''822''', ''|| v_out_table ||'', ''|| v_out_eszkcsp(a) ||'', ''|| F_V_99a(b) ||'', ''|| F_V_99(b) ||'', ''|| v_szektorok(s) ||'', ''|| v_out_eszkcsp_c(a) ||'', ''|| v_out_cfc(z) ||'', ''|| v_in_year(x) ||'');
 
 
                                                                                               END IF;                                                                                               
@@ -414,14 +414,14 @@ FOR z IN v_out_cfc.FIRST..v_out_cfc.LAST LOOP
                                                                                               SELECT COUNT(*) INTO v FROM user_tab_cols WHERE table_name = ''|| v_out_eszkcsp(a) ||'_'|| v_in_year(x) ||''; -- létezik az input tábla?
                                                                                               IF v != 0 THEN
 
-                                                                                                              PKD.AGAZAT_OSSZEVONAS('84', '''84'', ''841'', ''842'', ''843'', ''844'', ''845''', '''841'', ''842'', ''843'', ''844'', ''845''', ''|| v_out_table ||'', ''|| v_out_eszkcsp(a) ||'', ''|| F_V_99a(b) ||'', ''|| F_V_99(b) ||'', ''|| v_szektorok(s) ||'', ''|| v_out_eszkcsp_c(a) ||'', ''|| v_out_cfc(z) ||'', ''|| v_in_year(x) ||'');
+                                                                                                              PKD19.AGAZAT_OSSZEVONAS('84', '''84'', ''841'', ''842'', ''843'', ''844'', ''845''', '''841'', ''842'', ''843'', ''844'', ''845''', ''|| v_out_table ||'', ''|| v_out_eszkcsp(a) ||'', ''|| F_V_99a(b) ||'', ''|| F_V_99(b) ||'', ''|| v_szektorok(s) ||'', ''|| v_out_eszkcsp_c(a) ||'', ''|| v_out_cfc(z) ||'', ''|| v_in_year(x) ||'');
 
                                                                                               END IF;
 
                                                                                               SELECT COUNT(*) INTO v FROM user_tab_cols WHERE table_name = ''|| v_out_eszkcsp(a) ||'_'|| v_in_year(x) ||''; -- létezik az input tábla?
                                                                                               IF v != 0 THEN
 
-                                                                                                              PKD.AGAZAT_OSSZEVONAS('85', '''85'', ''851'', ''852'', ''853''', '''851'', ''852'', ''853''', ''|| v_out_table ||'', ''|| v_out_eszkcsp(a) ||'', ''|| F_V_99a(b) ||'', ''|| F_V_99(b) ||'', ''|| v_szektorok(s) ||'', ''|| v_out_eszkcsp_c(a) ||'', ''|| v_out_cfc(z) ||'', ''|| v_in_year(x) ||'');
+                                                                                                              PKD19.AGAZAT_OSSZEVONAS('85', '''85'', ''851'', ''852'', ''853''', '''851'', ''852'', ''853''', ''|| v_out_table ||'', ''|| v_out_eszkcsp(a) ||'', ''|| F_V_99a(b) ||'', ''|| F_V_99(b) ||'', ''|| v_szektorok(s) ||'', ''|| v_out_eszkcsp_c(a) ||'', ''|| v_out_cfc(z) ||'', ''|| v_in_year(x) ||'');
 
 
                                                                                               END IF;
@@ -460,7 +460,7 @@ FOR z IN v_out_cfc.FIRST..v_out_cfc.LAST LOOP
                                                                                               SELECT COUNT(*) INTO v FROM user_tab_cols WHERE table_name = ''|| v_out_eszkcsp(a) ||'_'|| v_in_year(x) ||''; -- létezik az input tábla?
                                                                                               IF v != 0 THEN
 
-                                                                                                              PKD.AGAZAT_OSSZEVONAS('84', '''84'', ''841'', ''842'', ''843'', ''844''', '''841'', ''842'', ''843'', ''844''', ''|| v_out_table ||'', ''|| v_out_eszkcsp(a) ||'', ''|| F_V_99a(b) ||'', ''|| F_V_99(b) ||'', ''|| v_szektorok(s) ||'', ''|| v_out_eszkcsp_c(a) ||'', ''|| v_out_cfc(z) ||'', ''|| v_in_year(x) ||'');
+                                                                                                              PKD19.AGAZAT_OSSZEVONAS('84', '''84'', ''841'', ''842'', ''843'', ''844''', '''841'', ''842'', ''843'', ''844''', ''|| v_out_table ||'', ''|| v_out_eszkcsp(a) ||'', ''|| F_V_99a(b) ||'', ''|| F_V_99(b) ||'', ''|| v_szektorok(s) ||'', ''|| v_out_eszkcsp_c(a) ||'', ''|| v_out_cfc(z) ||'', ''|| v_in_year(x) ||'');
 
 
                                                                                               END IF; 
@@ -483,7 +483,7 @@ END LOOP;
                 FOR a IN v_out_eszkcsp.FIRST..v_out_eszkcsp.LAST LOOP
 
                                EXECUTE IMMEDIATE'
-                               UPDATE PKD.'|| v_out_table ||'
+                               UPDATE PKD19.'|| v_out_table ||'
                                SET '|| v_out_eszkcsp(a) ||' =
                                ROUND('|| v_out_eszkcsp(a) ||')
                                '
@@ -521,7 +521,7 @@ FOR z IN v_out_cfc.FIRST..v_out_cfc.LAST LOOP
 
                                                                IF ''|| v_szektorok(s) ||'' = 'S1311' THEN
 
-                                                               sql_statement := 'SELECT COUNT(*) FROM PKD.'|| v_out_table ||' WHERE ALSZEKTOR = '''|| v_szektorok(s) ||''' ';
+                                                               sql_statement := 'SELECT COUNT(*) FROM PKD19.'|| v_out_table ||' WHERE ALSZEKTOR = '''|| v_szektorok(s) ||''' ';
                                                                EXECUTE IMMEDIATE sql_statement INTO v;
 
                                                                IF v > 0 THEN
@@ -529,47 +529,47 @@ FOR z IN v_out_cfc.FIRST..v_out_cfc.LAST LOOP
                                                                --S1311: 38->84 - 1995 -> 2006
                                                                IF ''|| v_in_year(x) ||'' NOT IN ('2007', '2008', '2009', '2010', '2011', '2012', '2013', '2014', '2015', '2016', '2017', '2018') THEN
 
-                                                               PKD.AGAZAT_VARIALAS('84', '''84'', ''38''', '''38''', ''|| v_out_table ||'', ''|| v_out_eszkcsp(a) ||'', ''|| F_V_99(b) ||'', ''|| v_szektorok(s) ||'', ''|| v_out_cfc(z) ||'', ''|| v_in_year(x) ||'');
+                                                               PKD19.AGAZAT_VARIALAS('84', '''84'', ''38''', '''38''', ''|| v_out_table ||'', ''|| v_out_eszkcsp(a) ||'', ''|| F_V_99(b) ||'', ''|| v_szektorok(s) ||'', ''|| v_out_cfc(z) ||'', ''|| v_in_year(x) ||'');
 
 
                                                                END IF;
 
                                                                --S1311: 56->55 - minden évre
-                                                               PKD.AGAZAT_VARIALAS('55', '''56'', ''55''', '''56''', ''|| v_out_table ||'', ''|| v_out_eszkcsp(a) ||'', ''|| F_V_99(b) ||'', ''|| v_szektorok(s) ||'', ''|| v_out_cfc(z) ||'', ''|| v_in_year(x) ||'');
+                                                               PKD19.AGAZAT_VARIALAS('55', '''56'', ''55''', '''56''', ''|| v_out_table ||'', ''|| v_out_eszkcsp(a) ||'', ''|| F_V_99(b) ||'', ''|| v_szektorok(s) ||'', ''|| v_out_cfc(z) ||'', ''|| v_in_year(x) ||'');
 
                                                                --S1311: 61->84 - minden évre
-                                                               PKD.AGAZAT_VARIALAS('84', '''61'', ''84''', '''61''', ''|| v_out_table ||'', ''|| v_out_eszkcsp(a) ||'', ''|| F_V_99(b) ||'', ''|| v_szektorok(s) ||'', ''|| v_out_cfc(z) ||'', ''|| v_in_year(x) ||'');
+                                                               PKD19.AGAZAT_VARIALAS('84', '''61'', ''84''', '''61''', ''|| v_out_table ||'', ''|| v_out_eszkcsp(a) ||'', ''|| F_V_99(b) ||'', ''|| v_szektorok(s) ||'', ''|| v_out_cfc(z) ||'', ''|| v_in_year(x) ||'');
 
                                                                --S1311: 96->84 - 2010 -> 2017
                                                                IF ''|| v_in_year(x) ||'' IN ('2010', '2011', '2012', '2013', '2014', '2015', '2016', '2017', '2018') THEN
 
-                                                               PKD.AGAZAT_VARIALAS('84', '''84'', ''96''', '''96''', ''|| v_out_table ||'', ''|| v_out_eszkcsp(a) ||'', ''|| F_V_99(b) ||'', ''|| v_szektorok(s) ||'', ''|| v_out_cfc(z) ||'', ''|| v_in_year(x) ||'');
+                                                               PKD19.AGAZAT_VARIALAS('84', '''84'', ''96''', '''96''', ''|| v_out_table ||'', ''|| v_out_eszkcsp(a) ||'', ''|| F_V_99(b) ||'', ''|| v_szektorok(s) ||'', ''|| v_out_cfc(z) ||'', ''|| v_in_year(x) ||'');
 
 
                                                                END IF;
 
                                                                --S1311: 49,58,62,94->84 - minden évre
-                                                               PKD.AGAZAT_VARIALAS('84', '''49'', ''58'', ''62'', ''94'', ''84''', '''49'', ''58'', ''62'', ''94''', ''|| v_out_table ||'', ''|| v_out_eszkcsp(a) ||'', ''|| F_V_99(b) ||'', ''|| v_szektorok(s) ||'', ''|| v_out_cfc(z) ||'', ''|| v_in_year(x) ||'');
+                                                               PKD19.AGAZAT_VARIALAS('84', '''49'', ''58'', ''62'', ''94'', ''84''', '''49'', ''58'', ''62'', ''94''', ''|| v_out_table ||'', ''|| v_out_eszkcsp(a) ||'', ''|| F_V_99(b) ||'', ''|| v_szektorok(s) ||'', ''|| v_out_cfc(z) ||'', ''|| v_in_year(x) ||'');
 
 
                                                                --S1311: 82->71 - 1995 -> 1999, 2013 -> 2017
                                                                IF ''|| v_in_year(x) ||'' IN ('1995', '1996', '1997', '1998', '1999', '2013', '2014', '2015', '2016', '2017') THEN
 
-                                                               PKD.AGAZAT_VARIALAS('71', '''82'', ''71''', '''82''', ''|| v_out_table ||'', ''|| v_out_eszkcsp(a) ||'', ''|| F_V_99(b) ||'', ''|| v_szektorok(s) ||'', ''|| v_out_cfc(z) ||'', ''|| v_in_year(x) ||'');
+                                                               PKD19.AGAZAT_VARIALAS('71', '''82'', ''71''', '''82''', ''|| v_out_table ||'', ''|| v_out_eszkcsp(a) ||'', ''|| F_V_99(b) ||'', ''|| v_szektorok(s) ||'', ''|| v_out_cfc(z) ||'', ''|| v_in_year(x) ||'');
 
                                                                END IF;                                                
 
                                                                --S1311: 90->93 - 1995 -> 1999   
                                                                IF ''|| v_in_year(x) ||'' IN ('1995', '1996', '1997', '1998', '1999') THEN
 
-                                                               PKD.AGAZAT_VARIALAS('93', '''90'', ''93''', '''90''', ''|| v_out_table ||'', ''|| v_out_eszkcsp(a) ||'', ''|| F_V_99(b) ||'', ''|| v_szektorok(s) ||'', ''|| v_out_cfc(z) ||'', ''|| v_in_year(x) ||'');
+                                                               PKD19.AGAZAT_VARIALAS('93', '''90'', ''93''', '''90''', ''|| v_out_table ||'', ''|| v_out_eszkcsp(a) ||'', ''|| F_V_99(b) ||'', ''|| v_szektorok(s) ||'', ''|| v_out_cfc(z) ||'', ''|| v_in_year(x) ||'');
 
                                                                END IF; 
 
                                                                --S1311: 68->55 - 2000 -> 2009   
                                                                IF ''|| v_in_year(x) ||'' IN ('2000', '2001', '2002', '2003', '2004', '2005', '2006', '2007', '2008', '2009') THEN
 
-                                                               PKD.AGAZAT_VARIALAS('55', '''68'', ''55''', '''68''', ''|| v_out_table ||'', ''|| v_out_eszkcsp(a) ||'', ''|| F_V_99(b) ||'', ''|| v_szektorok(s) ||'', ''|| v_out_cfc(z) ||'', ''|| v_in_year(x) ||'');
+                                                               PKD19.AGAZAT_VARIALAS('55', '''68'', ''55''', '''68''', ''|| v_out_table ||'', ''|| v_out_eszkcsp(a) ||'', ''|| F_V_99(b) ||'', ''|| v_szektorok(s) ||'', ''|| v_out_cfc(z) ||'', ''|| v_in_year(x) ||'');
 
                                                                END IF; 
 
@@ -596,40 +596,40 @@ FOR z IN v_out_cfc.FIRST..v_out_cfc.LAST LOOP
 
                                                                IF ''|| v_szektorok(s) ||'' = 'S1313' THEN
 
-                                                               sql_statement := 'SELECT COUNT(*) FROM PKD.'|| v_out_table ||' WHERE ALSZEKTOR = '''|| v_szektorok(s) ||''' ';
+                                                               sql_statement := 'SELECT COUNT(*) FROM PKD19.'|| v_out_table ||' WHERE ALSZEKTOR = '''|| v_szektorok(s) ||''' ';
                                                                EXECUTE IMMEDIATE sql_statement INTO v;
 
                                                                IF v > 0 THEN
 
                                                                --S1313: 35,47,58,62,72,77,94->84 - minden évre
-                                                               PKD.AGAZAT_VARIALAS('84', '''35'', ''47'', ''58'', ''62'', ''72'', ''77'', ''94'', ''84''', '''35'', ''47'', ''58'', ''62'', ''72'', ''77'', ''94''', ''|| v_out_table ||'', ''|| v_out_eszkcsp(a) ||'', ''|| F_V_99(b) ||'', ''|| v_szektorok(s) ||'', ''|| v_out_cfc(z) ||'', ''|| v_in_year(x) ||'');
+                                                               PKD19.AGAZAT_VARIALAS('84', '''35'', ''47'', ''58'', ''62'', ''72'', ''77'', ''94'', ''84''', '''35'', ''47'', ''58'', ''62'', ''72'', ''77'', ''94''', ''|| v_out_table ||'', ''|| v_out_eszkcsp(a) ||'', ''|| F_V_99(b) ||'', ''|| v_szektorok(s) ||'', ''|| v_out_cfc(z) ||'', ''|| v_in_year(x) ||'');
 
 
                                                                --S1313: 36->84 - 1995 -> 2009
                                                                IF ''|| v_in_year(x) ||'' NOT IN ('2010', '2011', '2012', '2013', '2014', '2015', '2016', '2017', '2018') THEN
 
-                                                               PKD.AGAZAT_VARIALAS('84', '''36'', ''84''', '''36''', ''|| v_out_table ||'', ''|| v_out_eszkcsp(a) ||'', ''|| F_V_99(b) ||'', ''|| v_szektorok(s) ||'', ''|| v_out_cfc(z) ||'', ''|| v_in_year(x) ||'');
+                                                               PKD19.AGAZAT_VARIALAS('84', '''36'', ''84''', '''36''', ''|| v_out_table ||'', ''|| v_out_eszkcsp(a) ||'', ''|| F_V_99(b) ||'', ''|| v_szektorok(s) ||'', ''|| v_out_cfc(z) ||'', ''|| v_in_year(x) ||'');
 
                                                                END IF;                                                                
 
                                                                --S1313: 49,50->84 - 1995 -> 2013
                                                                IF ''|| v_in_year(x) ||'' NOT IN ('2014', '2015', '2016', '2017', '2018') THEN
 
-                                                               PKD.AGAZAT_VARIALAS('84', '''49'', ''50'', ''84''', '''49'', ''50''', ''|| v_out_table ||'', ''|| v_out_eszkcsp(a) ||'', ''|| F_V_99(b) ||'', ''|| v_szektorok(s) ||'', ''|| v_out_cfc(z) ||'', ''|| v_in_year(x) ||'');
+                                                               PKD19.AGAZAT_VARIALAS('84', '''49'', ''50'', ''84''', '''49'', ''50''', ''|| v_out_table ||'', ''|| v_out_eszkcsp(a) ||'', ''|| F_V_99(b) ||'', ''|| v_szektorok(s) ||'', ''|| v_out_cfc(z) ||'', ''|| v_in_year(x) ||'');
 
                                                                END IF;                                                                
 
                                                                --S1313: 61->84 - 2010 -> 2013, 2017
                                                                IF ''|| v_in_year(x) ||'' IN ('2010', '2011', '2012', '2013', '2017') THEN
 
-                                                               PKD.AGAZAT_VARIALAS('84', '''61'', ''84''', '''61''', ''|| v_out_table ||'', ''|| v_out_eszkcsp(a) ||'', ''|| F_V_99(b) ||'', ''|| v_szektorok(s) ||'', ''|| v_out_cfc(z) ||'', ''|| v_in_year(x) ||'');
+                                                               PKD19.AGAZAT_VARIALAS('84', '''61'', ''84''', '''61''', ''|| v_out_table ||'', ''|| v_out_eszkcsp(a) ||'', ''|| F_V_99(b) ||'', ''|| v_szektorok(s) ||'', ''|| v_out_cfc(z) ||'', ''|| v_in_year(x) ||'');
 
                                                                END IF; 
 
                                                                --S1313: 71,82->84 - 1995 -> 1999, 2010 -> 2013 
                                                                IF ''|| v_in_year(x) ||'' IN ('1995', '1996', '1997', '1998', '1999', '2010', '2011', '2012', '2013') THEN
 
-                                                               PKD.AGAZAT_VARIALAS('84', '''71'', ''82'', ''84''', '''71'', ''82''', ''|| v_out_table ||'', ''|| v_out_eszkcsp(a) ||'', ''|| F_V_99(b) ||'', ''|| v_szektorok(s) ||'', ''|| v_out_cfc(z) ||'', ''|| v_in_year(x) ||'');
+                                                               PKD19.AGAZAT_VARIALAS('84', '''71'', ''82'', ''84''', '''71'', ''82''', ''|| v_out_table ||'', ''|| v_out_eszkcsp(a) ||'', ''|| F_V_99(b) ||'', ''|| v_szektorok(s) ||'', ''|| v_out_cfc(z) ||'', ''|| v_in_year(x) ||'');
 
 
                                                                END IF; 
@@ -637,7 +637,7 @@ FOR z IN v_out_cfc.FIRST..v_out_cfc.LAST LOOP
                                                                --S1313: 38->37 - 2000 -> 2003
                                                                IF ''|| v_in_year(x) ||'' IN ('2000', '2001', '2002', '2003' ) THEN
 
-                                                              PKD.AGAZAT_VARIALAS('37', '''38'', ''37''', '''38''', ''|| v_out_table ||'', ''|| v_out_eszkcsp(a) ||'', ''|| F_V_99(b) ||'', ''|| v_szektorok(s) ||'', ''|| v_out_cfc(z) ||'', ''|| v_in_year(x) ||'');
+                                                              PKD19.AGAZAT_VARIALAS('37', '''38'', ''37''', '''38''', ''|| v_out_table ||'', ''|| v_out_eszkcsp(a) ||'', ''|| F_V_99(b) ||'', ''|| v_szektorok(s) ||'', ''|| v_out_cfc(z) ||'', ''|| v_in_year(x) ||'');
 
                                                                END IF; 
 
@@ -645,14 +645,14 @@ FOR z IN v_out_cfc.FIRST..v_out_cfc.LAST LOOP
                                                                --S1313: 38->39 - 1995 -> 1999, 2004 -> 2009
                                                                IF ''|| v_in_year(x) ||'' IN ('1995', '1996', '1997', '1998', '1999', '2004', '2005', '2006', '2007', '2008', '2009') THEN
 
-                                                               PKD.AGAZAT_VARIALAS('39', '''38'', ''39''', '''38''', ''|| v_out_table ||'', ''|| v_out_eszkcsp(a) ||'', ''|| F_V_99(b) ||'', ''|| v_szektorok(s) ||'', ''|| v_out_cfc(z) ||'', ''|| v_in_year(x) ||'');
+                                                               PKD19.AGAZAT_VARIALAS('39', '''38'', ''39''', '''38''', ''|| v_out_table ||'', ''|| v_out_eszkcsp(a) ||'', ''|| F_V_99(b) ||'', ''|| v_szektorok(s) ||'', ''|| v_out_cfc(z) ||'', ''|| v_in_year(x) ||'');
 
                                                                END IF; 
 
                                                                --S1313: 41->42 - 1995 -> 1999   
                                                                IF ''|| v_in_year(x) ||'' IN ('1995', '1996', '1997', '1998', '1999') THEN
 
-                                                               PKD.AGAZAT_VARIALAS('42', '''41'', ''42''', '''41''', ''|| v_out_table ||'', ''|| v_out_eszkcsp(a) ||'', ''|| F_V_99(b) ||'', ''|| v_szektorok(s) ||'', ''|| v_out_cfc(z) ||'', ''|| v_in_year(x) ||'');
+                                                               PKD19.AGAZAT_VARIALAS('42', '''41'', ''42''', '''41''', ''|| v_out_table ||'', ''|| v_out_eszkcsp(a) ||'', ''|| F_V_99(b) ||'', ''|| v_szektorok(s) ||'', ''|| v_out_cfc(z) ||'', ''|| v_in_year(x) ||'');
 
 
                                                                END IF; 
@@ -660,7 +660,7 @@ FOR z IN v_out_cfc.FIRST..v_out_cfc.LAST LOOP
                                                                --S1313: 55->56 - 2000 -> 2002   
                                                                IF ''|| v_in_year(x) ||'' IN ('2000', '2001', '2002') THEN
 
-                                                               PKD.AGAZAT_VARIALAS('56', '''56'', ''55''', '''55''', ''|| v_out_table ||'', ''|| v_out_eszkcsp(a) ||'', ''|| F_V_99(b) ||'', ''|| v_szektorok(s) ||'', ''|| v_out_cfc(z) ||'', ''|| v_in_year(x) ||'');              
+                                                               PKD19.AGAZAT_VARIALAS('56', '''56'', ''55''', '''55''', ''|| v_out_table ||'', ''|| v_out_eszkcsp(a) ||'', ''|| F_V_99(b) ||'', ''|| v_szektorok(s) ||'', ''|| v_out_cfc(z) ||'', ''|| v_in_year(x) ||'');              
 
 
                                                                END IF; 
@@ -668,7 +668,7 @@ FOR z IN v_out_cfc.FIRST..v_out_cfc.LAST LOOP
                                                                --S1313: 56->55 - 1995 -> 1999   
                                                                IF ''|| v_in_year(x) ||'' IN ('1995', '1996', '1997', '1998', '1999') THEN
 
-                                                               PKD.AGAZAT_VARIALAS('55', '''55'', ''56''', '''56''', ''|| v_out_table ||'', ''|| v_out_eszkcsp(a) ||'', ''|| F_V_99(b) ||'', ''|| v_szektorok(s) ||'', ''|| v_out_cfc(z) ||'', ''|| v_in_year(x) ||'');              
+                                                               PKD19.AGAZAT_VARIALAS('55', '''55'', ''56''', '''56''', ''|| v_out_table ||'', ''|| v_out_eszkcsp(a) ||'', ''|| F_V_99(b) ||'', ''|| v_szektorok(s) ||'', ''|| v_out_cfc(z) ||'', ''|| v_in_year(x) ||'');              
 
 
                                                                END IF; 
@@ -677,7 +677,7 @@ FOR z IN v_out_cfc.FIRST..v_out_cfc.LAST LOOP
                                                                --S1313: 60->93 - 1995 -> 1999, 2014 -> 2017
                                                                IF ''|| v_in_year(x) ||'' IN ('1995', '1996', '1997', '1998', '1999', '2014', '2015', '2016', '2017') THEN
 
-                                                               PKD.AGAZAT_VARIALAS('93', '''60'', ''93''', '''60''', ''|| v_out_table ||'', ''|| v_out_eszkcsp(a) ||'', ''|| F_V_99(b) ||'', ''|| v_szektorok(s) ||'', ''|| v_out_cfc(z) ||'', ''|| v_in_year(x) ||'');
+                                                               PKD19.AGAZAT_VARIALAS('93', '''60'', ''93''', '''60''', ''|| v_out_table ||'', ''|| v_out_eszkcsp(a) ||'', ''|| F_V_99(b) ||'', ''|| v_szektorok(s) ||'', ''|| v_out_cfc(z) ||'', ''|| v_in_year(x) ||'');
 
 
                                                                END IF; 
@@ -686,7 +686,7 @@ FOR z IN v_out_cfc.FIRST..v_out_cfc.LAST LOOP
                                                                --S1313: 71->82 - 2000 -> 2009
                                                                IF ''|| v_in_year(x) ||'' IN ('2000', '2001', '2002', '2003', '2004', '2005', '2006', '2007', '2008', '2009') THEN
 
-                                                               PKD.AGAZAT_VARIALAS('82', '''71'', ''82''', '''71''', ''|| v_out_table ||'', ''|| v_out_eszkcsp(a) ||'', ''|| F_V_99(b) ||'', ''|| v_szektorok(s) ||'', ''|| v_out_cfc(z) ||'', ''|| v_in_year(x) ||'');
+                                                               PKD19.AGAZAT_VARIALAS('82', '''71'', ''82''', '''71''', ''|| v_out_table ||'', ''|| v_out_eszkcsp(a) ||'', ''|| F_V_99(b) ||'', ''|| v_szektorok(s) ||'', ''|| v_out_cfc(z) ||'', ''|| v_in_year(x) ||'');
 
 
                                                                END IF; 
@@ -694,7 +694,7 @@ FOR z IN v_out_cfc.FIRST..v_out_cfc.LAST LOOP
                                                                --S1313: 75->86 - 2001 -> 2017
                                                                IF ''|| v_in_year(x) ||'' NOT IN ('1995', '1996', '1997', '1998', '1999', '2000', '2018') THEN
 
-                                                               PKD.AGAZAT_VARIALAS('86', '''75'', ''86''', '''75''', ''|| v_out_table ||'', ''|| v_out_eszkcsp(a) ||'', ''|| F_V_99(b) ||'', ''|| v_szektorok(s) ||'', ''|| v_out_cfc(z) ||'', ''|| v_in_year(x) ||'');
+                                                               PKD19.AGAZAT_VARIALAS('86', '''75'', ''86''', '''75''', ''|| v_out_table ||'', ''|| v_out_eszkcsp(a) ||'', ''|| F_V_99(b) ||'', ''|| v_szektorok(s) ||'', ''|| v_out_cfc(z) ||'', ''|| v_in_year(x) ||'');
 
 
                                                                END IF; 
@@ -702,7 +702,7 @@ FOR z IN v_out_cfc.FIRST..v_out_cfc.LAST LOOP
                                                                --S1313: 82->71 - 2014 -> 2017
                                                                IF ''|| v_in_year(x) ||'' IN ('2014', '2015', '2016', '2017') THEN
 
-                                                               PKD.AGAZAT_VARIALAS('71', '''71'', ''82''', '''82''', ''|| v_out_table ||'', ''|| v_out_eszkcsp(a) ||'', ''|| F_V_99(b) ||'', ''|| v_szektorok(s) ||'', ''|| v_out_cfc(z) ||'', ''|| v_in_year(x) ||'');
+                                                               PKD19.AGAZAT_VARIALAS('71', '''71'', ''82''', '''82''', ''|| v_out_table ||'', ''|| v_out_eszkcsp(a) ||'', ''|| F_V_99(b) ||'', ''|| v_szektorok(s) ||'', ''|| v_out_cfc(z) ||'', ''|| v_in_year(x) ||'');
 
 
                                                                END IF; 
@@ -710,7 +710,7 @@ FOR z IN v_out_cfc.FIRST..v_out_cfc.LAST LOOP
                                                                --S1313: 82->84 - 2018
                                                                IF ''|| v_in_year(x) ||'' IN ('2018') THEN
 
-												   PKD.AGAZAT_VARIALAS('84', '''84'', ''82''', '''82''', ''|| v_out_table ||'', ''|| v_out_eszkcsp(a) ||'', ''|| F_V_99(b) ||'', ''|| v_szektorok(s) ||'', ''|| v_out_cfc(z) ||'', ''|| v_in_year(x) ||'');
+												   PKD19.AGAZAT_VARIALAS('84', '''84'', ''82''', '''82''', ''|| v_out_table ||'', ''|| v_out_eszkcsp(a) ||'', ''|| F_V_99(b) ||'', ''|| v_szektorok(s) ||'', ''|| v_out_cfc(z) ||'', ''|| v_in_year(x) ||'');
 
 
                                                                END IF; 
@@ -719,7 +719,7 @@ FOR z IN v_out_cfc.FIRST..v_out_cfc.LAST LOOP
                                                                --S1313: 90->91 - 1995 -> 1999
                                                                IF ''|| v_in_year(x) ||'' IN ('1995', '1996', '1997', '1998', '1999') THEN
 
-                                                               PKD.AGAZAT_VARIALAS('91', '''90'', ''91''', '''90''', ''|| v_out_table ||'', ''|| v_out_eszkcsp(a) ||'', ''|| F_V_99(b) ||'', ''|| v_szektorok(s) ||'', ''|| v_out_cfc(z) ||'', ''|| v_in_year(x) ||'');
+                                                               PKD19.AGAZAT_VARIALAS('91', '''90'', ''91''', '''90''', ''|| v_out_table ||'', ''|| v_out_eszkcsp(a) ||'', ''|| F_V_99(b) ||'', ''|| v_szektorok(s) ||'', ''|| v_out_cfc(z) ||'', ''|| v_in_year(x) ||'');
 
 
                                                                END IF; 
@@ -732,12 +732,12 @@ FOR z IN v_out_cfc.FIRST..v_out_cfc.LAST LOOP
 
                                                                IF ''|| v_szektorok(s) ||'' = 'S15' THEN
 
-                                                               sql_statement := 'SELECT COUNT(*) FROM PKD.'|| v_out_table ||' WHERE ALSZEKTOR = '''|| v_szektorok(s) ||''' ';
+                                                               sql_statement := 'SELECT COUNT(*) FROM PKD19.'|| v_out_table ||' WHERE ALSZEKTOR = '''|| v_szektorok(s) ||''' ';
                                                                EXECUTE IMMEDIATE sql_statement INTO v;
 
                                                                IF v > 0 THEN
 
-                                                               PKD.AGAZAT_VARIALAS('94', '''01'', ''15'', ''16'', ''17'', ''18'', ''33'', ''27'', ''26'', ''32'', ''36'', ''42'', ''56'', ''49'', ''52'', ''61'', ''68'', ''62'', ''71'', ''72'', ''39'', ''94'', ''96''', '''01'', ''15'', ''16'', ''17'', ''18'', ''33'', ''27'', ''26'', ''32'', ''36'', ''42'', ''56'', ''49'', ''52'', ''61'', ''68'', ''62'', ''71'', ''72'', ''39'', ''96''', ''|| v_out_table ||'', ''|| v_out_eszkcsp(a) ||'', ''|| F_V_99(b) ||'', ''|| v_szektorok(s) ||'', ''|| v_out_cfc(z) ||'', ''|| v_in_year(x) ||'');                                                    
+                                                               PKD19.AGAZAT_VARIALAS('94', '''01'', ''15'', ''16'', ''17'', ''18'', ''33'', ''27'', ''26'', ''32'', ''36'', ''42'', ''56'', ''49'', ''52'', ''61'', ''68'', ''62'', ''71'', ''72'', ''39'', ''94'', ''96''', '''01'', ''15'', ''16'', ''17'', ''18'', ''33'', ''27'', ''26'', ''32'', ''36'', ''42'', ''56'', ''49'', ''52'', ''61'', ''68'', ''62'', ''71'', ''72'', ''39'', ''96''', ''|| v_out_table ||'', ''|| v_out_eszkcsp(a) ||'', ''|| F_V_99(b) ||'', ''|| v_szektorok(s) ||'', ''|| v_out_cfc(z) ||'', ''|| v_in_year(x) ||'');                                                    
 
                                                                END IF;
 
@@ -765,10 +765,10 @@ FOR s IN v_szektorok.FIRST..v_szektorok.LAST LOOP
 
                                                                IF ''|| v_szektorok(s) ||'' = 'S14' THEN
 
-                                                               sql_statement := 'SELECT COUNT(*) FROM PKD.'|| v_out_table ||' WHERE ALSZEKTOR = '''|| v_szektorok(s) ||''' ';
+                                                               sql_statement := 'SELECT COUNT(*) FROM PKD19.'|| v_out_table ||' WHERE ALSZEKTOR = '''|| v_szektorok(s) ||''' ';
                                                                EXECUTE IMMEDIATE sql_statement INTO v;
 
-                                                               PKD.AGAZAT_VARIALAS('25', '''25'', ''27''', '''27''', ''|| v_out_table ||'', 'OWNSOFT', ''|| F_V_99(b) ||'', ''|| v_szektorok(s) ||'', ''|| v_out_cfc(z) ||'', ''|| v_in_year(x) ||'');
+                                                               PKD19.AGAZAT_VARIALAS('25', '''25'', ''27''', '''27''', ''|| v_out_table ||'', 'OWNSOFT', ''|| F_V_99(b) ||'', ''|| v_szektorok(s) ||'', ''|| v_out_cfc(z) ||'', ''|| v_in_year(x) ||'');
 
                                                                END IF;
 
@@ -790,11 +790,11 @@ dbms_output.put_line('4. lépés STOP: ' || systimestamp);
 
 dbms_output.put_line('5. lépés START: ' || systimestamp);
 
-sql_statement := 'SELECT COUNT(*) FROM PKD.'|| v_out_table ||' WHERE ALSZEKTOR = ''S1311'' ';
+sql_statement := 'SELECT COUNT(*) FROM PKD19.'|| v_out_table ||' WHERE ALSZEKTOR = ''S1311'' ';
 EXECUTE IMMEDIATE sql_statement INTO v;
 IF v > 0 THEN
 
-sql_statement := 'SELECT COUNT(*) FROM PKD.'|| v_out_table ||' WHERE ALSZEKTOR = ''S1313'' ';
+sql_statement := 'SELECT COUNT(*) FROM PKD19.'|| v_out_table ||' WHERE ALSZEKTOR = ''S1313'' ';
 EXECUTE IMMEDIATE sql_statement INTO v;
 IF v > 0 THEN                     
 
@@ -809,71 +809,71 @@ IF v > 0 THEN
 			  -- S1311: 86-os ágazat = (S1311: 86 + S1313: 86) * 86%
 			  -- S1313: 86-os ágazat = (S1311: 86 + S1313: 86) * 14%                   
 
-			  sql_statement := 'SELECT COUNT(*) FROM PKD.'|| v_out_table ||' WHERE EV = ''2012''';
+			  sql_statement := 'SELECT COUNT(*) FROM PKD19.'|| v_out_table ||' WHERE EV = ''2012''';
 			  EXECUTE IMMEDIATE sql_statement INTO v;
 
 			  IF v > 0 THEN
 
-			  sql_statement := 'SELECT ROUND(((SELECT NVL('|| v_out_eszkcsp(a) ||', 0) FROM PKD.'|| v_out_table ||' WHERE AGAZAT = ''86'' AND ALSZEKTOR = ''S1311''
-			  AND CFC_NET_GRS = '''|| v_out_cfc(b) ||''' AND F_V_99 = '''|| F_V_99(c) ||''' AND EV = ''2012'') +
-			  (SELECT NVL('|| v_out_eszkcsp(a) ||', 0) FROM PKD.'|| v_out_table ||' 
-			  WHERE AGAZAT = ''86'' AND ALSZEKTOR = ''S1313'' AND CFC_NET_GRS = '''|| v_out_cfc(b) ||''' AND F_V_99 = '''|| F_V_99(c) ||''' AND EV = ''2012''))
+			  sql_statement := 'SELECT ROUND(((SELECT NVL('|| v_out_eszkcsp(a) ||', 0) FROM PKD19.'|| v_out_table ||' WHERE AGAZAT = ''86'' AND ALSZEKTOR = ''S1311''
+			  AND CFC_NET_GRS = '''|| v_out_cfc(b) ||''' AND EV = ''2012'' AND F_V_99 = '''|| F_V_99(c) ||''') +
+			  (SELECT NVL('|| v_out_eszkcsp(a) ||', 0) FROM PKD19.'|| v_out_table ||' 
+			  WHERE AGAZAT = ''86'' AND ALSZEKTOR = ''S1313'' AND CFC_NET_GRS = '''|| v_out_cfc(b) ||''' AND EV = ''2012'' AND F_V_99 = '''|| F_V_99(c) ||'''))
 			  * 0.86) from dual';
 			  EXECUTE IMMEDIATE sql_statement INTO v1;
 
-			  sql_statement := 'SELECT ROUND(((SELECT NVL('|| v_out_eszkcsp(a) ||', 0) FROM PKD.'|| v_out_table ||' WHERE AGAZAT = ''86'' AND ALSZEKTOR = ''S1311''
-			  AND CFC_NET_GRS = '''|| v_out_cfc(b) ||''' AND F_V_99 = '''|| F_V_99(c) ||''' AND EV = ''2012'') +
-			  (SELECT NVL('|| v_out_eszkcsp(a) ||', 0) FROM PKD.'|| v_out_table ||' 
-			  WHERE AGAZAT = ''86'' AND ALSZEKTOR = ''S1313'' AND CFC_NET_GRS = '''|| v_out_cfc(b) ||''' AND F_V_99 = '''|| F_V_99(c) ||''' AND EV = ''2012''))
+			  sql_statement := 'SELECT ROUND(((SELECT NVL('|| v_out_eszkcsp(a) ||', 0) FROM PKD19.'|| v_out_table ||' WHERE AGAZAT = ''86'' AND ALSZEKTOR = ''S1311''
+			  AND CFC_NET_GRS = '''|| v_out_cfc(b) ||''' AND EV = ''2012'' AND F_V_99 = '''|| F_V_99(c) ||''') +
+			  (SELECT NVL('|| v_out_eszkcsp(a) ||', 0) FROM PKD19.'|| v_out_table ||' 
+			  WHERE AGAZAT = ''86'' AND ALSZEKTOR = ''S1313'' AND CFC_NET_GRS = '''|| v_out_cfc(b) ||''' AND EV = ''2012'' AND F_V_99 = '''|| F_V_99(c) ||'''))
 			  * 0.14) from dual';
 			  EXECUTE IMMEDIATE sql_statement INTO v2;
 
-			  PKD.SZEKTOR_MODOSITAS('86', ''|| v_out_table ||'', ''|| v_out_eszkcsp(a) ||'', ''|| F_V_99(c) ||'', 'S1311', ''|| v_out_cfc(b) ||'', '2012', ''|| v1 ||'');
+			  PKD19.SZEKTOR_MODOSITAS('86', ''|| v_out_table ||'', ''|| v_out_eszkcsp(a) ||'', ''|| F_V_99(c) ||'', 'S1311', ''|| v_out_cfc(b) ||'', '2012', ''|| v1 ||'');
 
-			  PKD.SZEKTOR_MODOSITAS('86', ''|| v_out_table ||'', ''|| v_out_eszkcsp(a) ||'', ''|| F_V_99(c) ||'', 'S1313', ''|| v_out_cfc(b) ||'', '2012', ''|| v2 ||'');
+			  PKD19.SZEKTOR_MODOSITAS('86', ''|| v_out_table ||'', ''|| v_out_eszkcsp(a) ||'', ''|| F_V_99(c) ||'', 'S1313', ''|| v_out_cfc(b) ||'', '2012', ''|| v2 ||'');
 
 
 			  -- S1311: 87-es ágazat = (S1311: 87 + S1313: 87) * 50%   
 			  -- S1313: 87-es ágazat = (S1311: 87 + S1313: 87) * 50%   
-			  sql_statement := 'SELECT ROUND(((SELECT NVL('|| v_out_eszkcsp(a) ||', 0) FROM PKD.'|| v_out_table ||' WHERE AGAZAT = ''87'' AND ALSZEKTOR = ''S1311''
-			  AND CFC_NET_GRS = '''|| v_out_cfc(b) ||''' AND F_V_99 = '''|| F_V_99(c) ||''' AND EV = ''2012'') +
-			  (SELECT NVL('|| v_out_eszkcsp(a) ||', 0) FROM PKD.'|| v_out_table ||' 
-			  WHERE AGAZAT = ''87'' AND ALSZEKTOR = ''S1313'' AND CFC_NET_GRS = '''|| v_out_cfc(b) ||''' AND F_V_99 = '''|| F_V_99(c) ||''' AND EV = ''2012''))
+			  sql_statement := 'SELECT ROUND(((SELECT NVL('|| v_out_eszkcsp(a) ||', 0) FROM PKD19.'|| v_out_table ||' WHERE AGAZAT = ''87'' AND ALSZEKTOR = ''S1311''
+			  AND CFC_NET_GRS = '''|| v_out_cfc(b) ||''' AND EV = ''2012'' AND F_V_99 = '''|| F_V_99(c) ||''') +
+			  (SELECT NVL('|| v_out_eszkcsp(a) ||', 0) FROM PKD19.'|| v_out_table ||' 
+			  WHERE AGAZAT = ''87'' AND ALSZEKTOR = ''S1313'' AND CFC_NET_GRS = '''|| v_out_cfc(b) ||''' AND EV = ''2012'' AND F_V_99 = '''|| F_V_99(c) ||''' ))
 			  * 0.50) from dual';
 			  EXECUTE IMMEDIATE sql_statement INTO v1;
 
-			  sql_statement := 'SELECT ROUND(((SELECT NVL('|| v_out_eszkcsp(a) ||', 0) FROM PKD.'|| v_out_table ||' WHERE AGAZAT = ''87'' AND ALSZEKTOR = ''S1311''
-			  AND CFC_NET_GRS = '''|| v_out_cfc(b) ||''' AND F_V_99 = '''|| F_V_99(c) ||''' AND EV = ''2012'') +
-			  (SELECT NVL('|| v_out_eszkcsp(a) ||', 0) FROM PKD.'|| v_out_table ||' 
-			  WHERE AGAZAT = ''87'' AND ALSZEKTOR = ''S1313'' AND CFC_NET_GRS = '''|| v_out_cfc(b) ||''' AND F_V_99 = '''|| F_V_99(c) ||''' AND EV = ''2012''))
+			  sql_statement := 'SELECT ROUND(((SELECT NVL('|| v_out_eszkcsp(a) ||', 0) FROM PKD19.'|| v_out_table ||' WHERE AGAZAT = ''87'' AND ALSZEKTOR = ''S1311''
+			  AND CFC_NET_GRS = '''|| v_out_cfc(b) ||''' AND EV = ''2012'' AND F_V_99 = '''|| F_V_99(c) ||''') +
+			  (SELECT NVL('|| v_out_eszkcsp(a) ||', 0) FROM PKD19.'|| v_out_table ||' 
+			  WHERE AGAZAT = ''87'' AND ALSZEKTOR = ''S1313'' AND CFC_NET_GRS = '''|| v_out_cfc(b) ||''' AND EV = ''2012'' AND F_V_99 = '''|| F_V_99(c) ||'''))
 			  * 0.50) from dual';
 			  EXECUTE IMMEDIATE sql_statement INTO v2;
 
-			  PKD.SZEKTOR_MODOSITAS('87', ''|| v_out_table ||'', ''|| v_out_eszkcsp(a) ||'', ''|| F_V_99(c) ||'', 'S1311', ''|| v_out_cfc(b) ||'', '2012', ''|| v1 ||'');
+			  PKD19.SZEKTOR_MODOSITAS('87', ''|| v_out_table ||'', ''|| v_out_eszkcsp(a) ||'', ''|| F_V_99(c) ||'', 'S1311', ''|| v_out_cfc(b) ||'', '2012', ''|| v1 ||'');
 
-			  PKD.SZEKTOR_MODOSITAS('87', ''|| v_out_table ||'', ''|| v_out_eszkcsp(a) ||'', ''|| F_V_99(c) ||'', 'S1313', ''|| v_out_cfc(b) ||'', '2012', ''|| v2 ||'');
+			  PKD19.SZEKTOR_MODOSITAS('87', ''|| v_out_table ||'', ''|| v_out_eszkcsp(a) ||'', ''|| F_V_99(c) ||'', 'S1313', ''|| v_out_cfc(b) ||'', '2012', ''|| v2 ||'');
 
 
 			  -- S1311: 88-as ágazat = (S1311: 88 + S1313: 88) * 4%      
 			  -- S1311: 88-as ágazat = (S1311: 88 + S1313: 88) * 96%    
-			  sql_statement := 'SELECT ROUND(((SELECT NVL('|| v_out_eszkcsp(a) ||', 0) FROM PKD.'|| v_out_table ||' WHERE AGAZAT = ''88'' AND ALSZEKTOR = ''S1311''
-			  AND CFC_NET_GRS = '''|| v_out_cfc(b) ||''' AND F_V_99 = '''|| F_V_99(c) ||''' AND EV = ''2012'') +
-			  (SELECT NVL('|| v_out_eszkcsp(a) ||', 0) FROM PKD.'|| v_out_table ||' 
-			  WHERE AGAZAT = ''88'' AND ALSZEKTOR = ''S1313'' AND CFC_NET_GRS = '''|| v_out_cfc(b) ||''' AND F_V_99 = '''|| F_V_99(c) ||''' AND EV = ''2012''))
+			  sql_statement := 'SELECT ROUND(((SELECT NVL('|| v_out_eszkcsp(a) ||', 0) FROM PKD19.'|| v_out_table ||' WHERE AGAZAT = ''88'' AND ALSZEKTOR = ''S1311''
+			  AND CFC_NET_GRS = '''|| v_out_cfc(b) ||''' AND EV = ''2012'' AND F_V_99 = '''|| F_V_99(c) ||''') +
+			  (SELECT NVL('|| v_out_eszkcsp(a) ||', 0) FROM PKD19.'|| v_out_table ||' 
+			  WHERE AGAZAT = ''88'' AND ALSZEKTOR = ''S1313'' AND CFC_NET_GRS = '''|| v_out_cfc(b) ||''' AND EV = ''2012'' AND F_V_99 = '''|| F_V_99(c) ||'''))
 			  * 0.04) from dual';
 			  EXECUTE IMMEDIATE sql_statement INTO v1;
 
 			  -- S1311: 88-as ágazat = (S1311: 88 + S1313: 88) * 96%
-			  sql_statement := 'SELECT ROUND(((SELECT NVL('|| v_out_eszkcsp(a) ||', 0) FROM PKD.'|| v_out_table ||' WHERE AGAZAT = ''88'' AND ALSZEKTOR = ''S1311''
-			  AND CFC_NET_GRS = '''|| v_out_cfc(b) ||''' AND F_V_99 = '''|| F_V_99(c) ||''' AND EV = ''2012'') +
-			  (SELECT NVL('|| v_out_eszkcsp(a) ||', 0) FROM PKD.'|| v_out_table ||' 
-			  WHERE AGAZAT = ''88'' AND ALSZEKTOR = ''S1313'' AND CFC_NET_GRS = '''|| v_out_cfc(b) ||''' AND F_V_99 = '''|| F_V_99(c) ||''' AND EV = ''2012''))
+			  sql_statement := 'SELECT ROUND(((SELECT NVL('|| v_out_eszkcsp(a) ||', 0) FROM PKD19.'|| v_out_table ||' WHERE AGAZAT = ''88'' AND ALSZEKTOR = ''S1311''
+			  AND CFC_NET_GRS = '''|| v_out_cfc(b) ||''' AND EV = ''2012'' AND F_V_99 = '''|| F_V_99(c) ||''') +
+			  (SELECT NVL('|| v_out_eszkcsp(a) ||', 0) FROM PKD19.'|| v_out_table ||' 
+			  WHERE AGAZAT = ''88'' AND ALSZEKTOR = ''S1313'' AND CFC_NET_GRS = '''|| v_out_cfc(b) ||''' AND EV = ''2012'' AND F_V_99 = '''|| F_V_99(c) ||'''))
 			  * 0.96) from dual';
 			  EXECUTE IMMEDIATE sql_statement INTO v2;                                                                
 
-			  PKD.SZEKTOR_MODOSITAS('88', ''|| v_out_table ||'', ''|| v_out_eszkcsp(a) ||'', ''|| F_V_99(c) ||'', 'S1311', ''|| v_out_cfc(b) ||'', '2012', ''|| v1 ||'');
+			  PKD19.SZEKTOR_MODOSITAS('88', ''|| v_out_table ||'', ''|| v_out_eszkcsp(a) ||'', ''|| F_V_99(c) ||'', 'S1311', ''|| v_out_cfc(b) ||'', '2012', ''|| v1 ||'');
 
-			  PKD.SZEKTOR_MODOSITAS('88', ''|| v_out_table ||'', ''|| v_out_eszkcsp(a) ||'', ''|| F_V_99(c) ||'', 'S1313', ''|| v_out_cfc(b) ||'', '2012', ''|| v2 ||'');
+			  PKD19.SZEKTOR_MODOSITAS('88', ''|| v_out_table ||'', ''|| v_out_eszkcsp(a) ||'', ''|| F_V_99(c) ||'', 'S1313', ''|| v_out_cfc(b) ||'', '2012', ''|| v2 ||'');
 
 			  END IF;
 
@@ -883,65 +883,65 @@ IF v > 0 THEN
 			  -- S1311: 86-os ágazat = (S1311: 86 + S1313: 86) * 92%   
 			  -- S1313: 86-os ágazat = (S1311: 86 + S1313: 86) * 8%      
 
-			  sql_statement := 'SELECT ROUND(((SELECT NVL('|| v_out_eszkcsp(a) ||', 0) FROM PKD.'|| v_out_table ||' WHERE AGAZAT = ''86'' AND ALSZEKTOR = ''S1311''
-			  AND CFC_NET_GRS = '''|| v_out_cfc(b) ||''' AND F_V_99 = '''|| F_V_99(c) ||''' AND EV = '''|| v_in_year(d) ||''') +
-			  (SELECT NVL('|| v_out_eszkcsp(a) ||', 0) FROM PKD.'|| v_out_table ||' 
-			  WHERE AGAZAT = ''86'' AND ALSZEKTOR = ''S1313'' AND CFC_NET_GRS = '''|| v_out_cfc(b) ||''' AND F_V_99 = '''|| F_V_99(c) ||''' AND EV = '''|| v_in_year(d) ||'''))
+			  sql_statement := 'SELECT ROUND(((SELECT NVL('|| v_out_eszkcsp(a) ||', 0) FROM PKD19.'|| v_out_table ||' WHERE AGAZAT = ''86'' AND ALSZEKTOR = ''S1311''
+			  AND CFC_NET_GRS = '''|| v_out_cfc(b) ||''' AND EV = '''|| v_in_year(d) ||''' AND F_V_99 = '''|| F_V_99(c) ||''') +
+			  (SELECT NVL('|| v_out_eszkcsp(a) ||', 0) FROM PKD19.'|| v_out_table ||' 
+			  WHERE AGAZAT = ''86'' AND ALSZEKTOR = ''S1313'' AND CFC_NET_GRS = '''|| v_out_cfc(b) ||''' AND EV = '''|| v_in_year(d) ||''' AND F_V_99 = '''|| F_V_99(c) ||'''))
 			  * 0.92) from dual';
 			  EXECUTE IMMEDIATE sql_statement INTO v1;
 
-			  sql_statement := 'SELECT ROUND(((SELECT NVL('|| v_out_eszkcsp(a) ||', 0) FROM PKD.'|| v_out_table ||' WHERE AGAZAT = ''86'' AND ALSZEKTOR = ''S1311''
-			  AND CFC_NET_GRS = '''|| v_out_cfc(b) ||''' AND F_V_99 = '''|| F_V_99(c) ||''' AND EV = '''|| v_in_year(d) ||''') +
-			  (SELECT NVL('|| v_out_eszkcsp(a) ||', 0) FROM PKD.'|| v_out_table ||' 
-			  WHERE AGAZAT = ''86'' AND ALSZEKTOR = ''S1313'' AND CFC_NET_GRS = '''|| v_out_cfc(b) ||''' AND F_V_99 = '''|| F_V_99(c) ||''' AND EV = '''|| v_in_year(d) ||'''))
+			  sql_statement := 'SELECT ROUND(((SELECT NVL('|| v_out_eszkcsp(a) ||', 0) FROM PKD19.'|| v_out_table ||' WHERE AGAZAT = ''86'' AND ALSZEKTOR = ''S1311''
+			  AND CFC_NET_GRS = '''|| v_out_cfc(b) ||''' AND EV = '''|| v_in_year(d) ||''' AND F_V_99 = '''|| F_V_99(c) ||''') +
+			  (SELECT NVL('|| v_out_eszkcsp(a) ||', 0) FROM PKD19.'|| v_out_table ||' 
+			  WHERE AGAZAT = ''86'' AND ALSZEKTOR = ''S1313'' AND CFC_NET_GRS = '''|| v_out_cfc(b) ||''' AND EV = '''|| v_in_year(d) ||''' AND F_V_99 = '''|| F_V_99(c) ||'''))
 			  * 0.08) from dual';
 			  EXECUTE IMMEDIATE sql_statement INTO v2;
 
-			  PKD.SZEKTOR_MODOSITAS('86', ''|| v_out_table ||'', ''|| v_out_eszkcsp(a) ||'', ''|| F_V_99(c) ||'', 'S1311', ''|| v_out_cfc(b) ||'', ''|| v_in_year(d) ||'', ''|| v1 ||'');
+			  PKD19.SZEKTOR_MODOSITAS('86', ''|| v_out_table ||'', ''|| v_out_eszkcsp(a) ||'', ''|| F_V_99(c) ||'', 'S1311', ''|| v_out_cfc(b) ||'', ''|| v_in_year(d) ||'', ''|| v1 ||'');
 
-			  PKD.SZEKTOR_MODOSITAS('86', ''|| v_out_table ||'', ''|| v_out_eszkcsp(a) ||'', ''|| F_V_99(c) ||'', 'S1313', ''|| v_out_cfc(b) ||'', ''|| v_in_year(d) ||'', ''|| v2 ||'');                                                                             
+			  PKD19.SZEKTOR_MODOSITAS('86', ''|| v_out_table ||'', ''|| v_out_eszkcsp(a) ||'', ''|| F_V_99(c) ||'', 'S1313', ''|| v_out_cfc(b) ||'', ''|| v_in_year(d) ||'', ''|| v2 ||'');                                                                             
 
 
 			  -- S1311: 87-es ágazat = (S1311: 87 + S1313: 87) * 66%   
 			  -- S1311: 87-es ágazat = (S1311: 87 + S1313: 87) * 34%   
-			  sql_statement := 'SELECT ROUND(((SELECT NVL('|| v_out_eszkcsp(a) ||', 0) FROM PKD.'|| v_out_table ||' WHERE AGAZAT = ''87'' AND ALSZEKTOR = ''S1311''
-			  AND CFC_NET_GRS = '''|| v_out_cfc(b) ||''' AND F_V_99 = '''|| F_V_99(c) ||''' AND EV = '''|| v_in_year(d) ||''') +
-			  (SELECT NVL('|| v_out_eszkcsp(a) ||', 0) FROM PKD.'|| v_out_table ||' 
-			  WHERE AGAZAT = ''87'' AND ALSZEKTOR = ''S1313'' AND CFC_NET_GRS = '''|| v_out_cfc(b) ||''' AND F_V_99 = '''|| F_V_99(c) ||''' AND EV = '''|| v_in_year(d) ||'''))
+			  sql_statement := 'SELECT ROUND(((SELECT NVL('|| v_out_eszkcsp(a) ||', 0) FROM PKD19.'|| v_out_table ||' WHERE AGAZAT = ''87'' AND ALSZEKTOR = ''S1311''
+			  AND CFC_NET_GRS = '''|| v_out_cfc(b) ||''' AND EV = '''|| v_in_year(d) ||''' AND F_V_99 = '''|| F_V_99(c) ||''') +
+			  (SELECT NVL('|| v_out_eszkcsp(a) ||', 0) FROM PKD19.'|| v_out_table ||' 
+			  WHERE AGAZAT = ''87'' AND ALSZEKTOR = ''S1313'' AND CFC_NET_GRS = '''|| v_out_cfc(b) ||''' AND EV = '''|| v_in_year(d) ||''' AND F_V_99 = '''|| F_V_99(c) ||''')
 			  * 0.66) from dual';
 			  EXECUTE IMMEDIATE sql_statement INTO v1;
 
-			  sql_statement := 'SELECT ROUND(((SELECT NVL('|| v_out_eszkcsp(a) ||', 0) FROM PKD.'|| v_out_table ||' WHERE AGAZAT = ''87'' AND ALSZEKTOR = ''S1311''
-			  AND CFC_NET_GRS = '''|| v_out_cfc(b) ||''' AND F_V_99 = '''|| F_V_99(c) ||''' AND EV = '''|| v_in_year(d) ||''') +
-			  (SELECT NVL('|| v_out_eszkcsp(a) ||', 0) FROM PKD.'|| v_out_table ||' 
-			  WHERE AGAZAT = ''87'' AND ALSZEKTOR = ''S1313'' AND CFC_NET_GRS = '''|| v_out_cfc(b) ||''' AND F_V_99 = '''|| F_V_99(c) ||''' AND EV = '''|| v_in_year(d) ||'''))
+			  sql_statement := 'SELECT ROUND(((SELECT NVL('|| v_out_eszkcsp(a) ||', 0) FROM PKD19.'|| v_out_table ||' WHERE AGAZAT = ''87'' AND ALSZEKTOR = ''S1311''
+			  AND CFC_NET_GRS = '''|| v_out_cfc(b) ||''' AND EV = '''|| v_in_year(d) ||''' AND F_V_99 = '''|| F_V_99(c) ||''') +
+			  (SELECT NVL('|| v_out_eszkcsp(a) ||', 0) FROM PKD19.'|| v_out_table ||' 
+			  WHERE AGAZAT = ''87'' AND ALSZEKTOR = ''S1313'' AND CFC_NET_GRS = '''|| v_out_cfc(b) ||''' AND EV = '''|| v_in_year(d) ||''' AND F_V_99 = '''|| F_V_99(c) ||'''))
 			  * 0.34) from dual';
 			  EXECUTE IMMEDIATE sql_statement INTO v2;
 
-			  PKD.SZEKTOR_MODOSITAS('87', ''|| v_out_table ||'', ''|| v_out_eszkcsp(a) ||'', ''|| F_V_99(c) ||'', 'S1311', ''|| v_out_cfc(b) ||'', ''|| v_in_year(d) ||'', ''|| v1 ||'');
+			  PKD19.SZEKTOR_MODOSITAS('87', ''|| v_out_table ||'', ''|| v_out_eszkcsp(a) ||'', ''|| F_V_99(c) ||'', 'S1311', ''|| v_out_cfc(b) ||'', ''|| v_in_year(d) ||'', ''|| v1 ||'');
 
-			  PKD.SZEKTOR_MODOSITAS('87', ''|| v_out_table ||'', ''|| v_out_eszkcsp(a) ||'', ''|| F_V_99(c) ||'', 'S1313', ''|| v_out_cfc(b) ||'', ''|| v_in_year(d) ||'', ''|| v2 ||'');              
+			  PKD19.SZEKTOR_MODOSITAS('87', ''|| v_out_table ||'', ''|| v_out_eszkcsp(a) ||'', ''|| F_V_99(c) ||'', 'S1313', ''|| v_out_cfc(b) ||'', ''|| v_in_year(d) ||'', ''|| v2 ||'');              
 
 
 			  -- S1311: 88-as ágazat = (S1311: 88 + S1313: 88) * 7%      
 			  -- S1311: 88-as ágazat = (S1311: 88 + S1313: 88) * 93%
-			  sql_statement := 'SELECT ROUND(((SELECT NVL('|| v_out_eszkcsp(a) ||', 0) FROM PKD.'|| v_out_table ||' WHERE AGAZAT = ''88'' AND ALSZEKTOR = ''S1311''
-			  AND CFC_NET_GRS = '''|| v_out_cfc(b) ||''' AND F_V_99 = '''|| F_V_99(c) ||''' AND EV = '''|| v_in_year(d) ||''') +
-			  (SELECT NVL('|| v_out_eszkcsp(a) ||', 0) FROM PKD.'|| v_out_table ||' 
-			  WHERE AGAZAT = ''88'' AND ALSZEKTOR = ''S1313'' AND CFC_NET_GRS = '''|| v_out_cfc(b) ||''' AND F_V_99 = '''|| F_V_99(c) ||''' AND EV = '''|| v_in_year(d) ||'''))
+			  sql_statement := 'SELECT ROUND(((SELECT NVL('|| v_out_eszkcsp(a) ||', 0) FROM PKD19.'|| v_out_table ||' WHERE AGAZAT = ''88'' AND ALSZEKTOR = ''S1311''
+			  AND CFC_NET_GRS = '''|| v_out_cfc(b) ||''' AND EV = '''|| v_in_year(d) ||''' AND F_V_99 = '''|| F_V_99(c) ||''') +
+			  (SELECT NVL('|| v_out_eszkcsp(a) ||', 0) FROM PKD19.'|| v_out_table ||' 
+			  WHERE AGAZAT = ''88'' AND ALSZEKTOR = ''S1313'' AND CFC_NET_GRS = '''|| v_out_cfc(b) ||''' AND EV = '''|| v_in_year(d) ||''' AND F_V_99 = '''|| F_V_99(c) ||'''))
 			  * 0.07) from dual';
 			  EXECUTE IMMEDIATE sql_statement INTO v1;
 
-			  sql_statement := 'SELECT ROUND(((SELECT NVL('|| v_out_eszkcsp(a) ||', 0) FROM PKD.'|| v_out_table ||' WHERE AGAZAT = ''88'' AND ALSZEKTOR = ''S1311''
-			  AND CFC_NET_GRS = '''|| v_out_cfc(b) ||''' AND F_V_99 = '''|| F_V_99(c) ||''' AND EV = '''|| v_in_year(d) ||''') +
-			  (SELECT NVL('|| v_out_eszkcsp(a) ||', 0) FROM PKD.'|| v_out_table ||' 
-			  WHERE AGAZAT = ''88'' AND ALSZEKTOR = ''S1313'' AND CFC_NET_GRS = '''|| v_out_cfc(b) ||''' AND F_V_99 = '''|| F_V_99(c) ||''' AND EV = '''|| v_in_year(d) ||'''))
+			  sql_statement := 'SELECT ROUND(((SELECT NVL('|| v_out_eszkcsp(a) ||', 0) FROM PKD19.'|| v_out_table ||' WHERE AGAZAT = ''88'' AND ALSZEKTOR = ''S1311''
+			  AND CFC_NET_GRS = '''|| v_out_cfc(b) ||''' AND EV = '''|| v_in_year(d) ||''' AND F_V_99 = '''|| F_V_99(c) ||''') +
+			  (SELECT NVL('|| v_out_eszkcsp(a) ||', 0) FROM PKD19.'|| v_out_table ||' 
+			  WHERE AGAZAT = ''88'' AND ALSZEKTOR = ''S1313'' AND CFC_NET_GRS = '''|| v_out_cfc(b) ||''' AND EV = '''|| v_in_year(d) ||''' AND F_V_99 = '''|| F_V_99(c) ||'''))
 			  * 0.93) from dual';
-			  EXECUTE IMMEDIATE sql_statement INTO v2;  
+			  EXECUTE IMMEDIATE sql_statement INTO v2;
 
-			  PKD.SZEKTOR_MODOSITAS('88', ''|| v_out_table ||'', ''|| v_out_eszkcsp(a) ||'', ''|| F_V_99(c) ||'', 'S1311', ''|| v_out_cfc(b) ||'', ''|| v_in_year(d) ||'', ''|| v1 ||'');
+			  PKD19.SZEKTOR_MODOSITAS('88', ''|| v_out_table ||'', ''|| v_out_eszkcsp(a) ||'', ''|| F_V_99(c) ||'', 'S1311', ''|| v_out_cfc(b) ||'', ''|| v_in_year(d) ||'', ''|| v1 ||'');
 
-			  PKD.SZEKTOR_MODOSITAS('88', ''|| v_out_table ||'', ''|| v_out_eszkcsp(a) ||'', ''|| F_V_99(c) ||'', 'S1313', ''|| v_out_cfc(b) ||'', ''|| v_in_year(d) ||'', ''|| v2 ||'');              
+			  PKD19.SZEKTOR_MODOSITAS('88', ''|| v_out_table ||'', ''|| v_out_eszkcsp(a) ||'', ''|| F_V_99(c) ||'', 'S1313', ''|| v_out_cfc(b) ||'', ''|| v_in_year(d) ||'', ''|| v2 ||'');              
 
 
                                                                               END LOOP;
@@ -973,7 +973,7 @@ FOR b IN v_out_nk_eszkcsp.FIRST..v_out_nk_eszkcsp.LAST LOOP
 SELECT COUNT(*) INTO v FROM user_tab_cols WHERE table_name = ''|| v_out_nk_eszkcsp(b) ||'_'|| v_in_year(x) ||''; -- létezik az input tábla?
 IF v != 0 THEN
 
-sql_statement := 'SELECT COUNT(*) FROM PKD.'|| v_out_table ||' ';
+sql_statement := 'SELECT COUNT(*) FROM PKD19.'|| v_out_table ||' ';
 EXECUTE IMMEDIATE sql_statement INTO v;
 IF v > 0 THEN
 
@@ -981,7 +981,7 @@ FOR c IN F_V_99a.FIRST..F_V_99a.LAST LOOP
 
 	   EXECUTE IMMEDIATE
 	   'DECLARE
-	   CURSOR INS_OPS IS SELECT OUTPUT, ALSZEKTOR, AGAZAT, ROUND('|| F_V_99a(c) ||') AS OUTNUM FROM PKD.'|| v_out_nk_eszkcsp(b) ||'_'|| v_in_year(x) ||' WHERE AGAZAT != ''SUM'';
+	   CURSOR INS_OPS IS SELECT OUTPUT, ALSZEKTOR, AGAZAT, ROUND('|| F_V_99a(c) ||') AS OUTNUM FROM PKD19.'|| v_out_nk_eszkcsp(b) ||'_'|| v_in_year(x) ||' WHERE AGAZAT != ''SUM'';
 	   TYPE INS_ARRAY IS TABLE OF INS_OPS%ROWTYPE;
 	   INS_OPS_ARRAY INS_ARRAY;
 		 BEGIN
@@ -989,7 +989,7 @@ FOR c IN F_V_99a.FIRST..F_V_99a.LAST LOOP
 	   LOOP
 		 FETCH INS_OPS BULK COLLECT INTO INS_OPS_ARRAY;
 		 FORALL I IN INS_OPS_ARRAY.FIRST..INS_OPS_ARRAY.LAST
-	   UPDATE PKD.'|| v_out_table ||' 
+	   UPDATE PKD19.'|| v_out_table ||' 
 	   SET '|| v_out_nk_eszkcsp(b) ||' = INS_OPS_ARRAY(I).OUTNUM
 	   WHERE ALSZEKTOR = INS_OPS_ARRAY(I).ALSZEKTOR AND CFC_NET_GRS = INS_OPS_ARRAY(I).OUTPUT AND F_V_99 = '''|| F_V_99(c) ||''' AND EV = '''|| v_in_year(x) ||''' AND AGAZAT = INS_OPS_ARRAY(I).AGAZAT;
 
@@ -1023,7 +1023,7 @@ FOR x IN 1..v_in_year.COUNT LOOP
 	   IF ''|| v_szektorok(s) ||'' = 'S1311' THEN
 
 	   -- S1311a/60 -> S11/59
-	   sql_statement := 'SELECT COUNT(*) FROM PKD.'|| v_out_table ||' WHERE ALSZEKTOR = ''S11'' ';
+	   sql_statement := 'SELECT COUNT(*) FROM PKD19.'|| v_out_table ||' WHERE ALSZEKTOR = ''S11'' ';
 	   EXECUTE IMMEDIATE sql_statement INTO v;
 
 	   IF v > 0 THEN
@@ -1031,17 +1031,17 @@ FOR x IN 1..v_in_year.COUNT LOOP
 	   IF ''|| v_in_year(x) ||'' IN ('1995', '1996', '1997', '1998', '1999', '2000', '2001', '2002') THEN
 
 					   EXECUTE IMMEDIATE'
-					   UPDATE PKD.'|| v_out_table ||'
+					   UPDATE PKD19.'|| v_out_table ||'
 					   SET ORIGINALS = 
-					   (SELECT (NVL(ORIGINALS, 0)) FROM PKD.'|| v_out_table ||' a
-					   WHERE a.AGAZAT = ''60'' AND a.ALSZEKTOR = ''S1311a'' AND a.CFC_NET_GRS = '''|| v_out_cfc(z) ||''' AND a.EV = '''|| v_in_year(x) ||''' AND a.F_V_99 = '''|| F_V_99(b) ||''') + (SELECT (NVL(ORIGINALS, 0)) FROM PKD.'|| v_out_table ||' a
+					   (SELECT (NVL(ORIGINALS, 0)) FROM PKD19.'|| v_out_table ||' a
+					   WHERE a.AGAZAT = ''60'' AND a.ALSZEKTOR = ''S1311a'' AND a.CFC_NET_GRS = '''|| v_out_cfc(z) ||''' AND a.EV = '''|| v_in_year(x) ||''' AND a.F_V_99 = '''|| F_V_99(b) ||''') + (SELECT (NVL(ORIGINALS, 0)) FROM PKD19.'|| v_out_table ||' a
 					   WHERE a.AGAZAT = ''59'' AND a.ALSZEKTOR = ''S11'' AND a.CFC_NET_GRS = '''|| v_out_cfc(z) ||''' AND a.EV = '''|| v_in_year(x) ||''' AND a.F_V_99 = '''|| F_V_99(b) ||''')
 					   WHERE AGAZAT = ''59'' AND ALSZEKTOR = ''S11'' AND CFC_NET_GRS = '''|| v_out_cfc(z) ||''' AND EV = '''|| v_in_year(x) ||''' AND F_V_99 = '''|| F_V_99(b) ||'''
 					   '
 					   ;
 
 					   EXECUTE IMMEDIATE'
-					   UPDATE PKD.'|| v_out_table ||'
+					   UPDATE PKD19.'|| v_out_table ||'
 					   SET ORIGINALS = ''0''
 					   WHERE AGAZAT = ''60'' AND ALSZEKTOR = ''S1311a'' AND CFC_NET_GRS = '''|| v_out_cfc(z) ||''' AND EV = '''|| v_in_year(x) ||''' AND F_V_99 = '''|| F_V_99(b) ||'''
 					   '
@@ -1076,7 +1076,7 @@ FOR x IN 13..23 LOOP --2007 - 2017 között
 IF ''|| v_szektorok(s) ||'' = 'S1311a' THEN
 
 -- S1311/722 + S1311a/723 -> S1311/722
-sql_statement := 'SELECT COUNT(*) FROM PKD.'|| v_out_table ||' WHERE ALSZEKTOR = ''S1311'' ';
+sql_statement := 'SELECT COUNT(*) FROM PKD19.'|| v_out_table ||' WHERE ALSZEKTOR = ''S1311'' ';
 EXECUTE IMMEDIATE sql_statement INTO v;
 
 IF v > 0 THEN
@@ -1084,17 +1084,17 @@ IF v > 0 THEN
 --IF ''|| v_in_year(x) ||'' IN ('2007', '2008', '2009', '2010', '2011', '2012', '2013', '2014', '2015', '2016', '2017') THEN
 
 		   EXECUTE IMMEDIATE'
-		   UPDATE PKD.'|| v_out_table ||'
+		   UPDATE PKD19.'|| v_out_table ||'
 		   SET K_F = 
-		   (SELECT (NVL(K_F, 0)) FROM PKD.'|| v_out_table ||' a
-		   WHERE a.AGAZAT = ''723'' AND a.ALSZEKTOR = ''S1311a'' AND a.CFC_NET_GRS = '''|| v_out_cfc(z) ||''' AND a.EV = '''|| v_in_year(x) ||''' AND a.F_V_99 = '''|| F_V_99(b) ||''') + (SELECT (NVL(K_F, 0)) FROM PKD.'|| v_out_table ||' a
+		   (SELECT (NVL(K_F, 0)) FROM PKD19.'|| v_out_table ||' a
+		   WHERE a.AGAZAT = ''723'' AND a.ALSZEKTOR = ''S1311a'' AND a.CFC_NET_GRS = '''|| v_out_cfc(z) ||''' AND a.EV = '''|| v_in_year(x) ||''' AND a.F_V_99 = '''|| F_V_99(b) ||''') + (SELECT (NVL(K_F, 0)) FROM PKD19.'|| v_out_table ||' a
 		   WHERE a.AGAZAT = ''722'' AND a.ALSZEKTOR = ''S1311'' AND a.CFC_NET_GRS = '''|| v_out_cfc(z) ||''' AND a.EV = '''|| v_in_year(x) ||''' AND a.F_V_99 = '''|| F_V_99(b) ||''')
 		   WHERE AGAZAT = ''722'' AND ALSZEKTOR = ''S1311'' AND CFC_NET_GRS = '''|| v_out_cfc(z) ||''' AND EV = '''|| v_in_year(x) ||''' AND F_V_99 = '''|| F_V_99(b) ||'''
 		   '
 		   ;
 
 		   EXECUTE IMMEDIATE'
-		   UPDATE PKD.'|| v_out_table ||'
+		   UPDATE PKD19.'|| v_out_table ||'
 		   SET K_F = ''0''
 		   WHERE AGAZAT IN (''723'', ''SUM'') AND ALSZEKTOR = ''S1311a'' AND CFC_NET_GRS = '''|| v_out_cfc(z) ||''' AND EV = '''|| v_in_year(x) ||''' AND F_V_99 = '''|| F_V_99(b) ||'''
 		   '
@@ -1120,18 +1120,18 @@ FOR s IN v_szektorok.FIRST..v_szektorok.LAST LOOP
 IF ''|| v_szektorok(s) ||'' = 'S1311' THEN
 
 	   EXECUTE IMMEDIATE'
-	   UPDATE PKD.'|| v_out_table ||'
+	   UPDATE PKD19.'|| v_out_table ||'
 	   SET K_F = 
-	   (SELECT ROUND(NVL(K_F, 0)) FROM PKD.'|| v_out_table ||' a
+	   (SELECT ROUND(NVL(K_F, 0)) FROM PKD19.'|| v_out_table ||' a
 	   WHERE a.AGAZAT = ''721'' AND a.ALSZEKTOR = ''S1311'' AND a.CFC_NET_GRS = ''cfc'' AND a.EV = ''2008'' AND a.F_V_99 = ''F'') + 1
 	   WHERE AGAZAT = ''721'' AND ALSZEKTOR = ''S1311'' AND CFC_NET_GRS = ''cfc'' AND EV = ''2008'' AND F_V_99 = ''F''
 	   '
 	   ;
 
 	   EXECUTE IMMEDIATE'
-	   UPDATE PKD.'|| v_out_table ||'
+	   UPDATE PKD19.'|| v_out_table ||'
 	   SET K_F = 
-	   (SELECT ROUND(NVL(K_F, 0)) FROM PKD.'|| v_out_table ||' a
+	   (SELECT ROUND(NVL(K_F, 0)) FROM PKD19.'|| v_out_table ||' a
 	   WHERE a.AGAZAT = ''721'' AND a.ALSZEKTOR = ''S1311'' AND a.CFC_NET_GRS = ''cfc'' AND a.EV = ''2011'' AND a.F_V_99 = ''F'') + 1
 	   WHERE AGAZAT = ''721'' AND ALSZEKTOR = ''S1311'' AND CFC_NET_GRS = ''cfc'' AND EV = ''2011'' AND F_V_99 = ''F''
 	   '
@@ -1148,18 +1148,18 @@ FOR s IN v_szektorok.FIRST..v_szektorok.LAST LOOP
                 IF ''|| v_szektorok(s) ||'' = 'S1313' THEN
 
                                EXECUTE IMMEDIATE'
-                               UPDATE PKD.'|| v_out_table ||'
+                               UPDATE PKD19.'|| v_out_table ||'
                                SET FOLDJAVITAS = 
-                               (SELECT ROUND(NVL(FOLDJAVITAS, 0)) FROM PKD.'|| v_out_table ||' a
+                               (SELECT ROUND(NVL(FOLDJAVITAS, 0)) FROM PKD19.'|| v_out_table ||' a
                                WHERE a.AGAZAT = ''39'' AND a.ALSZEKTOR = ''S1313'' AND a.CFC_NET_GRS = ''cfc'' AND a.EV = ''2016'' AND a.F_V_99 = ''F'') - 4
                                WHERE AGAZAT = ''39'' AND ALSZEKTOR = ''S1313'' AND CFC_NET_GRS = ''cfc'' AND EV = ''2016'' AND F_V_99 = ''F''
                                '
                                ;				
 				
                                EXECUTE IMMEDIATE'
-                               UPDATE PKD.'|| v_out_table ||'
+                               UPDATE PKD19.'|| v_out_table ||'
                                SET FOLDJAVITAS = 
-                               (SELECT ROUND(NVL(FOLDJAVITAS, 0)) FROM PKD.'|| v_out_table ||' a
+                               (SELECT ROUND(NVL(FOLDJAVITAS, 0)) FROM PKD19.'|| v_out_table ||' a
                                WHERE a.AGAZAT = ''39'' AND a.ALSZEKTOR = ''S1313'' AND a.CFC_NET_GRS = ''cfc'' AND a.EV = ''2017'' AND a.F_V_99 = ''F'') - 1
                                WHERE AGAZAT = ''39'' AND ALSZEKTOR = ''S1313'' AND CFC_NET_GRS = ''cfc'' AND EV = ''2017'' AND F_V_99 = ''F''
                                '
@@ -1184,9 +1184,9 @@ FOR s IN v_szektorok.FIRST..v_szektorok.LAST LOOP
                                -- ;
 
                                EXECUTE IMMEDIATE'
-                               UPDATE PKD.'|| v_out_table ||'
+                               UPDATE PKD19.'|| v_out_table ||'
                                SET FOLDJAVITAS = 
-                               (SELECT ROUND(NVL(FOLDJAVITAS, 0)) FROM PKD.'|| v_out_table ||' a
+                               (SELECT ROUND(NVL(FOLDJAVITAS, 0)) FROM PKD19.'|| v_out_table ||' a
                                WHERE a.AGAZAT = ''84'' AND a.ALSZEKTOR = ''S1313'' AND a.CFC_NET_GRS = ''cfc'' AND a.EV = ''2016'' AND a.F_V_99 = ''F'') + 5
                                WHERE AGAZAT = ''84'' AND ALSZEKTOR = ''S1313'' AND CFC_NET_GRS = ''cfc'' AND EV = ''2016'' AND F_V_99 = ''F''
                                '
@@ -1203,27 +1203,27 @@ FOR s IN v_szektorok.FIRST..v_szektorok.LAST LOOP
 							   
 							   
                                EXECUTE IMMEDIATE'
-                               UPDATE PKD.'|| v_out_table ||'
+                               UPDATE PKD19.'|| v_out_table ||'
                                SET FOLDJAVITAS = 
-                               (SELECT ROUND(NVL(FOLDJAVITAS, 0)) FROM PKD.'|| v_out_table ||' a
+                               (SELECT ROUND(NVL(FOLDJAVITAS, 0)) FROM PKD19.'|| v_out_table ||' a
                                WHERE a.AGAZAT = ''39'' AND a.ALSZEKTOR = ''S1313'' AND a.CFC_NET_GRS = ''cfc'' AND a.EV = ''2015'' AND a.F_V_99 = ''V'') + 8
                                WHERE AGAZAT = ''39'' AND ALSZEKTOR = ''S1313'' AND CFC_NET_GRS = ''cfc'' AND EV = ''2015'' AND F_V_99 = ''V''
                                '
                                ;
 
                                EXECUTE IMMEDIATE'
-                               UPDATE PKD.'|| v_out_table ||'
+                               UPDATE PKD19.'|| v_out_table ||'
                                SET FOLDJAVITAS = 
-                               (SELECT ROUND(NVL(FOLDJAVITAS, 0)) FROM PKD.'|| v_out_table ||' a
+                               (SELECT ROUND(NVL(FOLDJAVITAS, 0)) FROM PKD19.'|| v_out_table ||' a
                                WHERE a.AGAZAT = ''39'' AND a.ALSZEKTOR = ''S1313'' AND a.CFC_NET_GRS = ''cfc'' AND a.EV = ''2016'' AND a.F_V_99 = ''V'') + 4
                                WHERE AGAZAT = ''39'' AND ALSZEKTOR = ''S1313'' AND CFC_NET_GRS = ''cfc'' AND EV = ''2016'' AND F_V_99 = ''V''
                                '
                                ;
 
                                EXECUTE IMMEDIATE'
-                               UPDATE PKD.'|| v_out_table ||'
+                               UPDATE PKD19.'|| v_out_table ||'
                                SET FOLDJAVITAS = 
-                               (SELECT ROUND(NVL(FOLDJAVITAS, 0)) FROM PKD.'|| v_out_table ||' a
+                               (SELECT ROUND(NVL(FOLDJAVITAS, 0)) FROM PKD19.'|| v_out_table ||' a
                                WHERE a.AGAZAT = ''39'' AND a.ALSZEKTOR = ''S1313'' AND a.CFC_NET_GRS = ''cfc'' AND a.EV = ''2017'' AND a.F_V_99 = ''V'') + 8
                                WHERE AGAZAT = ''39'' AND ALSZEKTOR = ''S1313'' AND CFC_NET_GRS = ''cfc'' AND EV = ''2017'' AND F_V_99 = ''V''
                                '
@@ -1240,27 +1240,27 @@ FOR s IN v_szektorok.FIRST..v_szektorok.LAST LOOP
                                -- ;							   
 							   
                                EXECUTE IMMEDIATE'
-                               UPDATE PKD.'|| v_out_table ||'
+                               UPDATE PKD19.'|| v_out_table ||'
                                SET FOLDJAVITAS = 
-                               (SELECT ROUND(NVL(FOLDJAVITAS, 0)) FROM PKD.'|| v_out_table ||' a
+                               (SELECT ROUND(NVL(FOLDJAVITAS, 0)) FROM PKD19.'|| v_out_table ||' a
                                WHERE a.AGAZAT = ''84'' AND a.ALSZEKTOR = ''S1313'' AND a.CFC_NET_GRS = ''cfc'' AND a.EV = ''2015'' AND a.F_V_99 = ''V'') - 8
                                WHERE AGAZAT = ''84'' AND ALSZEKTOR = ''S1313'' AND CFC_NET_GRS = ''cfc'' AND EV = ''2015'' AND F_V_99 = ''V''
                                '
                                ;
 
                                EXECUTE IMMEDIATE'
-                               UPDATE PKD.'|| v_out_table ||'
+                               UPDATE PKD19.'|| v_out_table ||'
                                SET FOLDJAVITAS = 
-                               (SELECT ROUND(NVL(FOLDJAVITAS, 0)) FROM PKD.'|| v_out_table ||' a
+                               (SELECT ROUND(NVL(FOLDJAVITAS, 0)) FROM PKD19.'|| v_out_table ||' a
                                WHERE a.AGAZAT = ''84'' AND a.ALSZEKTOR = ''S1313'' AND a.CFC_NET_GRS = ''cfc'' AND a.EV = ''2016'' AND a.F_V_99 = ''V'') - 4
                                WHERE AGAZAT = ''84'' AND ALSZEKTOR = ''S1313'' AND CFC_NET_GRS = ''cfc'' AND EV = ''2016'' AND F_V_99 = ''V''
                                '
                                ;
 
                                EXECUTE IMMEDIATE'
-                               UPDATE PKD.'|| v_out_table ||'
+                               UPDATE PKD19.'|| v_out_table ||'
                                SET FOLDJAVITAS = 
-                               (SELECT ROUND(NVL(FOLDJAVITAS, 0)) FROM PKD.'|| v_out_table ||' a
+                               (SELECT ROUND(NVL(FOLDJAVITAS, 0)) FROM PKD19.'|| v_out_table ||' a
                                WHERE a.AGAZAT = ''84'' AND a.ALSZEKTOR = ''S1313'' AND a.CFC_NET_GRS = ''cfc'' AND a.EV = ''2017'' AND a.F_V_99 = ''V'') - 8
                                WHERE AGAZAT = ''84'' AND ALSZEKTOR = ''S1313'' AND CFC_NET_GRS = ''cfc'' AND EV = ''2017'' AND F_V_99 = ''V''
                                '
@@ -1288,7 +1288,7 @@ dbms_output.put_line('7. lépés START: ' || systimestamp);
 
 FOR s IN v_szektorok.FIRST..v_szektorok.LAST LOOP
 
-sql_statement := 'SELECT COUNT(*) FROM PKD.'|| cfc_imputalt ||' WHERE ALSZEKTOR = '''|| v_szektorok(s) ||''' ';
+sql_statement := 'SELECT COUNT(*) FROM PKD19.'|| cfc_imputalt ||' WHERE ALSZEKTOR = '''|| v_szektorok(s) ||''' ';
 EXECUTE IMMEDIATE sql_statement INTO v;
 IF v > 0 THEN
 
@@ -1296,11 +1296,11 @@ FOR c IN v_out_nk_up.FIRST..3 LOOP -- csak ORIGINALS, FEGYVER, K_F
 
 FOR d IN F_V_99.FIRST..F_V_99.LAST LOOP
 
-sql_statement := 'SELECT COUNT(*) FROM PKD.'|| cfc_imputalt ||' WHERE ALSZEKTOR = '''|| v_szektorok(s) ||''' AND ESZKOZCSP = '''|| v_out_nk_up_c(c) ||''' AND F_V = '''|| F_V_99(d) ||''' ';
+sql_statement := 'SELECT COUNT(*) FROM PKD19.'|| cfc_imputalt ||' WHERE ALSZEKTOR = '''|| v_szektorok(s) ||''' AND ESZKOZCSP = '''|| v_out_nk_up_c(c) ||''' AND F_V = '''|| F_V_99(d) ||''' ';
 EXECUTE IMMEDIATE sql_statement INTO v;
 IF v > 0 THEN
 
-sql_statement := 'SELECT DISTINCT AGAZAT FROM PKD.'|| cfc_imputalt ||' WHERE ESZKOZCSP = '''|| v_out_nk_up_c(c) ||''' AND F_V = '''|| F_V_99(d) ||''' AND ALSZEKTOR = '''|| v_szektorok(s) ||''' ';
+sql_statement := 'SELECT DISTINCT AGAZAT FROM PKD19.'|| cfc_imputalt ||' WHERE ESZKOZCSP = '''|| v_out_nk_up_c(c) ||''' AND F_V = '''|| F_V_99(d) ||''' AND ALSZEKTOR = '''|| v_szektorok(s) ||''' ';
 EXECUTE IMMEDIATE sql_statement BULK COLLECT INTO v_agazat;
 
 FOR b IN v_in_year.FIRST..v_in_year.LAST LOOP
@@ -1374,11 +1374,11 @@ FOR x IN v_out_cfc.FIRST..v_out_cfc.LAST LOOP
 				-- DBMS_OUTPUT.PUT_LINE(''|| v_agazat(e) ||'');
 
 			  EXECUTE IMMEDIATE'
-			  UPDATE PKD.'|| v_out_table ||' 
+			  UPDATE PKD19.'|| v_out_table ||' 
 			  SET '|| v_out_nk_up(c) ||' =
-			  (SELECT ROUND(NVL('|| v_update ||', 0)) FROM PKD.'|| cfc_imputalt ||' WHERE ESZKOZCSP = '''|| v_out_nk_up_c(c) ||''' AND F_V = '''|| F_V_99(d) ||''' AND ALSZEKTOR = '''|| v_szektorok(s) ||''' AND AGAZAT = '''|| v_agazat(e) ||''' AND OUTPUT = '''|| v_out_cfc(x) ||'''
-			  ) + (SELECT NVL('|| v_out_nk_up(c) ||', 0) FROM PKD.'|| v_out_table ||' WHERE F_V_99 = '''|| F_V_99(d) ||''' AND ALSZEKTOR = '''|| v_szektorok(s) ||''' AND AGAZAT = '''|| v_agazat(e) ||''' AND CFC_NET_GRS = '''|| v_out_cfc(x) ||''' AND EV = '''|| v_in_year(b) ||''')
-			  WHERE F_V_99 = '''|| F_V_99(d) ||''' AND ALSZEKTOR = '''|| v_szektorok(s) ||''' AND AGAZAT = '''|| v_agazat(e) ||''' AND CFC_NET_GRS = '''|| v_out_cfc(x) ||''' AND EV = '''|| v_in_year(b) ||'''
+			  (SELECT ROUND(NVL('|| v_update ||', 0)) FROM PKD19.'|| cfc_imputalt ||' WHERE ESZKOZCSP = '''|| v_out_nk_up_c(c) ||''' AND F_V = '''|| F_V_99(d) ||''' AND ALSZEKTOR = '''|| v_szektorok(s) ||''' AND AGAZAT = '''|| v_agazat(e) ||''' AND OUTPUT = '''|| v_out_cfc(x) ||'''
+			  ) + (SELECT NVL('|| v_out_nk_up(c) ||', 0) FROM PKD19.'|| v_out_table ||' WHERE AGAZAT = '''|| v_agazat(e) ||''' AND ALSZEKTOR = '''|| v_szektorok(s) ||''' AND CFC_NET_GRS = '''|| v_out_cfc(x) ||''' AND EV = '''|| v_in_year(b) ||''' AND F_V_99 = '''|| F_V_99(d) ||''')
+			  WHERE AGAZAT = '''|| v_agazat(e) ||''' AND ALSZEKTOR = '''|| v_szektorok(s) ||''' AND CFC_NET_GRS = '''|| v_out_cfc(x) ||''' AND EV = '''|| v_in_year(b) ||''' AND F_V_99 = '''|| F_V_99(d) ||'''
 			  '
 			  ;
 
@@ -1402,11 +1402,11 @@ FOR c IN v_out_eszkcsp_c.FIRST..v_out_eszkcsp_c.LAST LOOP -- csak ÉPÜLET, JÁR
 
 FOR d IN F_V_99.FIRST..F_V_99.LAST LOOP
 
-sql_statement := 'SELECT COUNT(*) FROM PKD.'|| cfc_imputalt ||' WHERE ALSZEKTOR = '''|| v_szektorok(s) ||''' AND ESZKOZCSP = '''|| v_out_eszkcsp_c(c) ||''' AND F_V = '''|| F_V_99(d) ||''' ';
+sql_statement := 'SELECT COUNT(*) FROM PKD19.'|| cfc_imputalt ||' WHERE ALSZEKTOR = '''|| v_szektorok(s) ||''' AND ESZKOZCSP = '''|| v_out_eszkcsp_c(c) ||''' AND F_V = '''|| F_V_99(d) ||''' ';
 EXECUTE IMMEDIATE sql_statement INTO v;
 IF v > 0 THEN
 
-sql_statement := 'SELECT DISTINCT AGAZAT FROM PKD.'|| cfc_imputalt ||' WHERE ESZKOZCSP = '''|| v_out_eszkcsp_c(c) ||''' AND F_V = '''|| F_V_99(d) ||''' AND ALSZEKTOR = '''|| v_szektorok(s) ||''' ';
+sql_statement := 'SELECT DISTINCT AGAZAT FROM PKD19.'|| cfc_imputalt ||' WHERE ESZKOZCSP = '''|| v_out_eszkcsp_c(c) ||''' AND F_V = '''|| F_V_99(d) ||''' AND ALSZEKTOR = '''|| v_szektorok(s) ||''' ';
 EXECUTE IMMEDIATE sql_statement BULK COLLECT INTO v_agazat;
 
 FOR b IN v_in_year.FIRST..v_in_year.LAST LOOP
@@ -1469,17 +1469,17 @@ FOR e IN v_agazat.FIRST..v_agazat.LAST LOOP
 
 FOR x IN v_out_cfc.FIRST..v_out_cfc.LAST LOOP
 
-		  sql_statement := 'SELECT COUNT(*) FROM PKD.'|| cfc_imputalt ||' WHERE ESZKOZCSP = '''|| v_out_eszkcsp_c(c) ||''' AND F_V = '''|| F_V_99(d) ||''' AND ALSZEKTOR = '''|| v_szektorok(s) ||''' AND AGAZAT = '''|| v_agazat(e) ||''' AND OUTPUT = '''|| v_out_cfc(x) ||'''';
+		  sql_statement := 'SELECT COUNT(*) FROM PKD19.'|| cfc_imputalt ||' WHERE ESZKOZCSP = '''|| v_out_eszkcsp_c(c) ||''' AND F_V = '''|| F_V_99(d) ||''' AND ALSZEKTOR = '''|| v_szektorok(s) ||''' AND AGAZAT = '''|| v_agazat(e) ||''' AND OUTPUT = '''|| v_out_cfc(x) ||'''';
 		  EXECUTE IMMEDIATE sql_statement INTO v;
 
 			IF v > 0 THEN		  
 		  
 			  EXECUTE IMMEDIATE'
-			  UPDATE PKD.'|| v_out_table ||' 
+			  UPDATE PKD19.'|| v_out_table ||' 
 			  SET '|| v_out_eszkcsp(c) ||' =
-			  (SELECT ROUND(NVL('|| v_update ||', 0)) FROM PKD.'|| cfc_imputalt ||' WHERE ESZKOZCSP = '''|| v_out_eszkcsp_c(c) ||''' AND F_V = '''|| F_V_99(d) ||''' AND ALSZEKTOR = '''|| v_szektorok(s) ||''' AND AGAZAT = '''|| v_agazat(e) ||''' AND OUTPUT = '''|| v_out_cfc(x) ||'''
-			  ) + (SELECT NVL('|| v_out_eszkcsp(c) ||', 0) FROM PKD.'|| v_out_table ||' WHERE F_V_99 = '''|| F_V_99(d) ||''' AND ALSZEKTOR = '''|| v_szektorok(s) ||''' AND AGAZAT = '''|| v_agazat(e) ||''' AND CFC_NET_GRS = '''|| v_out_cfc(x) ||''' AND EV = '''|| v_in_year(b) ||''')
-			  WHERE F_V_99 = '''|| F_V_99(d) ||''' AND ALSZEKTOR = '''|| v_szektorok(s) ||''' AND AGAZAT = '''|| v_agazat(e) ||''' AND CFC_NET_GRS = '''|| v_out_cfc(x) ||''' AND EV = '''|| v_in_year(b) ||'''
+			  (SELECT ROUND(NVL('|| v_update ||', 0)) FROM PKD19.'|| cfc_imputalt ||' WHERE ESZKOZCSP = '''|| v_out_eszkcsp_c(c) ||''' AND F_V = '''|| F_V_99(d) ||''' AND ALSZEKTOR = '''|| v_szektorok(s) ||''' AND AGAZAT = '''|| v_agazat(e) ||''' AND OUTPUT = '''|| v_out_cfc(x) ||'''
+			  ) + (SELECT NVL('|| v_out_eszkcsp(c) ||', 0) FROM PKD19.'|| v_out_table ||' WHERE AGAZAT = '''|| v_agazat(e) ||''' AND ALSZEKTOR = '''|| v_szektorok(s) ||''' AND CFC_NET_GRS = '''|| v_out_cfc(x) ||'''  AND EV = '''|| v_in_year(b) ||''' AND F_V_99 = '''|| F_V_99(d) ||''')
+			  WHERE AGAZAT = '''|| v_agazat(e) ||''' AND ALSZEKTOR = '''|| v_szektorok(s) ||''' AND CFC_NET_GRS = '''|| v_out_cfc(x) ||'''  AND EV = '''|| v_in_year(b) ||''' AND F_V_99 = '''|| F_V_99(d) ||'''
 			  '
 			  ;
 			  
@@ -1510,7 +1510,7 @@ END LOOP;
 
 FOR s IN v_szektorok.FIRST..v_szektorok.LAST LOOP
 
-                sql_statement := 'SELECT COUNT(*) FROM PKD.'|| v_out_table ||' WHERE ALSZEKTOR = '''|| v_szektorok(s) ||''' ';
+                sql_statement := 'SELECT COUNT(*) FROM PKD19.'|| v_out_table ||' WHERE ALSZEKTOR = '''|| v_szektorok(s) ||''' ';
                 EXECUTE IMMEDIATE sql_statement INTO v;
                 IF v > 0 THEN
 
@@ -1520,13 +1520,13 @@ FOR s IN v_szektorok.FIRST..v_szektorok.LAST LOOP
 
                                                                FOR x IN v_in_year.FIRST..v_in_year.LAST LOOP
 
-                                               execute immediate 'select ROUND(SUM(NVL(EPULET, 0))) from PKD.'|| v_out_table ||' WHERE F_V_99 = '''|| F_V_99(z) ||''' AND CFC_NET_GRS = '''|| v_out_cfc(b) ||''' AND EV = '''|| v_in_year(x) ||''' AND ALSZEKTOR = '''|| v_szektorok(s) ||'''' INTO sum_all_epulet;
-                                               execute immediate 'select ROUND(SUM(NVL(TARTOSGEP, 0))) from PKD.'|| v_out_table ||' WHERE F_V_99 = '''|| F_V_99(z) ||''' AND CFC_NET_GRS = '''|| v_out_cfc(b) ||''' AND EV = '''|| v_in_year(x) ||''' AND ALSZEKTOR = '''|| v_szektorok(s) ||'''' INTO sum_all_tartosgep;                                  
-                                               execute immediate 'select ROUND(SUM(NVL(GYORSGEP, 0))) from PKD.'|| v_out_table ||' WHERE F_V_99 = '''|| F_V_99(z) ||''' AND CFC_NET_GRS = '''|| v_out_cfc(b) ||''' AND EV = '''|| v_in_year(x) ||''' AND ALSZEKTOR = '''|| v_szektorok(s) ||'''' INTO sum_all_gyorsgep;
-                                               execute immediate 'select ROUND(SUM(NVL(JARMU, 0))) from PKD.'|| v_out_table ||' WHERE F_V_99 = '''|| F_V_99(z) ||''' AND CFC_NET_GRS = '''|| v_out_cfc(b) ||''' AND EV = '''|| v_in_year(x) ||''' AND ALSZEKTOR = '''|| v_szektorok(s) ||'''' INTO sum_all_jarmu;
-                                               execute immediate 'select ROUND(SUM(NVL(SZOFTVER, 0))) from PKD.'|| v_out_table ||' WHERE F_V_99 = '''|| F_V_99(z) ||''' AND CFC_NET_GRS = '''|| v_out_cfc(b) ||''' AND EV = '''|| v_in_year(x) ||''' AND ALSZEKTOR = '''|| v_szektorok(s) ||'''' INTO sum_all_szoftver;      
+                                               execute immediate 'select ROUND(SUM(NVL(EPULET, 0))) from PKD19.'|| v_out_table ||' WHERE F_V_99 = '''|| F_V_99(z) ||''' AND CFC_NET_GRS = '''|| v_out_cfc(b) ||''' AND EV = '''|| v_in_year(x) ||''' AND ALSZEKTOR = '''|| v_szektorok(s) ||'''' INTO sum_all_epulet;
+                                               execute immediate 'select ROUND(SUM(NVL(TARTOSGEP, 0))) from PKD19.'|| v_out_table ||' WHERE F_V_99 = '''|| F_V_99(z) ||''' AND CFC_NET_GRS = '''|| v_out_cfc(b) ||''' AND EV = '''|| v_in_year(x) ||''' AND ALSZEKTOR = '''|| v_szektorok(s) ||'''' INTO sum_all_tartosgep;                                  
+                                               execute immediate 'select ROUND(SUM(NVL(GYORSGEP, 0))) from PKD19.'|| v_out_table ||' WHERE F_V_99 = '''|| F_V_99(z) ||''' AND CFC_NET_GRS = '''|| v_out_cfc(b) ||''' AND EV = '''|| v_in_year(x) ||''' AND ALSZEKTOR = '''|| v_szektorok(s) ||'''' INTO sum_all_gyorsgep;
+                                               execute immediate 'select ROUND(SUM(NVL(JARMU, 0))) from PKD19.'|| v_out_table ||' WHERE F_V_99 = '''|| F_V_99(z) ||''' AND CFC_NET_GRS = '''|| v_out_cfc(b) ||''' AND EV = '''|| v_in_year(x) ||''' AND ALSZEKTOR = '''|| v_szektorok(s) ||'''' INTO sum_all_jarmu;
+                                               execute immediate 'select ROUND(SUM(NVL(SZOFTVER, 0))) from PKD19.'|| v_out_table ||' WHERE F_V_99 = '''|| F_V_99(z) ||''' AND CFC_NET_GRS = '''|| v_out_cfc(b) ||''' AND EV = '''|| v_in_year(x) ||''' AND ALSZEKTOR = '''|| v_szektorok(s) ||'''' INTO sum_all_szoftver;      
 
-tev_phad_sql_text := 'SELECT rowid sorid, EPULET, GYORSGEP, TARTOSGEP, JARMU, SZOFTVER FROM PKD.'|| v_out_table ||' WHERE F_V_99 = '''|| F_V_99(z) ||''' AND CFC_NET_GRS = '''|| v_out_cfc(b) ||''' AND EV = '''|| v_in_year(x) ||''' AND ALSZEKTOR = '''|| v_szektorok(s) ||''' AND AGAZAT = ''SUM'' ';
+tev_phad_sql_text := 'SELECT rowid sorid, EPULET, GYORSGEP, TARTOSGEP, JARMU, SZOFTVER FROM PKD19.'|| v_out_table ||' WHERE F_V_99 = '''|| F_V_99(z) ||''' AND CFC_NET_GRS = '''|| v_out_cfc(b) ||''' AND EV = '''|| v_in_year(x) ||''' AND ALSZEKTOR = '''|| v_szektorok(s) ||''' AND AGAZAT = ''SUM'' ';
 
 open ysum_cur for tev_phad_sql_text;
 
@@ -1537,7 +1537,7 @@ open ysum_cur for tev_phad_sql_text;
             begin
 
                execute immediate '
-                                                               UPDATE PKD.'|| v_out_table ||' 
+                                                               UPDATE PKD19.'|| v_out_table ||' 
                 set
                                                                EPULET = :sum_all_epulet,
                                                                TARTOSGEP = :sum_all_tartosgep,
@@ -1573,7 +1573,7 @@ END LOOP;
 COMMIT;            
 
 -- SUM_CLASSIC kiszámítása 
-tev_phad_sql_text := 'SELECT rowid sorid, EPULET, GYORSGEP, TARTOSGEP, JARMU, SZOFTVER FROM PKD.'|| v_out_table ||' ';
+tev_phad_sql_text := 'SELECT rowid sorid, EPULET, GYORSGEP, TARTOSGEP, JARMU, SZOFTVER FROM PKD19.'|| v_out_table ||' ';
 
 open ysum_cur for tev_phad_sql_text;
 
@@ -1584,7 +1584,7 @@ open ysum_cur for tev_phad_sql_text;
             begin
 
                 execute immediate '
-                                                               UPDATE PKD.'|| v_out_table ||' 
+                                                               UPDATE PKD19.'|| v_out_table ||' 
                 set
                 SUM_CLASSIC = :sum_all
                                                                WHERE rowid=:sorid
@@ -1622,12 +1622,12 @@ FOR s IN v_szektorok.FIRST..v_szektorok.LAST LOOP
 FOR b IN F_V_99.FIRST..F_V_99.LAST LOOP
 
 	  EXECUTE IMMEDIATE'
-	  UPDATE PKD.'|| v_out_table_all ||'
+	  UPDATE PKD19.'|| v_out_table_all ||'
 	  SET '|| v_out_nk_eszkcsp_3(a) ||' = 
-	  (SELECT '|| v_out_nk_eszkcsp_3(a) ||' FROM PKD.'|| v_out_table ||'
-	  WHERE AGAZAT = '''|| v_3_agazat(l) ||''' 
+	  (SELECT '|| v_out_nk_eszkcsp_3(a) ||' FROM PKD19.'|| v_out_table ||'
+	  WHERE AGAZAT = '''|| v_3_agazat(l) ||''' AND ALSZEKTOR = '''|| v_szektorok(s) ||'''
 	  AND CFC_NET_GRS = '''|| v_out_cfc(z) ||''' AND EV = '''|| v_in_year(x) ||''' AND 
-	  F_V_99 = '''|| F_V_99(b) ||''' AND ALSZEKTOR = '''|| v_szektorok(s) ||''')
+	  F_V_99 = '''|| F_V_99(b) ||''')
 	  WHERE AGAZAT = '''|| v_3_agazat(l) ||''' 
 	  AND CFC_NET_GRS = '''|| v_out_cfc(z) ||''' AND EV = '''|| v_in_year(x) ||''' AND 
 	  F_V_99 = '''|| F_V_99(b) ||''' AND ALSZEKTOR = '''|| v_szektorok(s) ||'''
@@ -1669,7 +1669,7 @@ FOR z IN v_out_cfc.FIRST..v_out_cfc.LAST LOOP
 	  SELECT COUNT(*) INTO v FROM user_tab_cols WHERE table_name = ''|| v_out_nk_eszkcsp(a) ||'_'|| v_in_year(x) ||''; -- létezik az input tábla?
 	  IF v != 0 THEN
 
-	  PKD.AGAZAT_OSSZEVONAS_NK('72', '''72'', ''721'', ''722'', ''723''', '''721'', ''722'', ''723''', ''|| v_out_table ||'', ''|| v_out_nk_eszkcsp(a) ||'', ''|| F_V_99(b) ||'', ''|| v_szektorok(s) ||'', ''|| v_out_cfc(z) ||'', ''|| v_in_year(x) ||'');
+	  PKD19.AGAZAT_OSSZEVONAS_NK('72', '''72'', ''721'', ''722'', ''723''', '''721'', ''722'', ''723''', ''|| v_out_table ||'', ''|| v_out_nk_eszkcsp(a) ||'', ''|| F_V_99(b) ||'', ''|| v_szektorok(s) ||'', ''|| v_out_cfc(z) ||'', ''|| v_in_year(x) ||'');
 
 	  END IF;
 
@@ -1677,7 +1677,7 @@ FOR z IN v_out_cfc.FIRST..v_out_cfc.LAST LOOP
 	  SELECT COUNT(*) INTO v FROM user_tab_cols WHERE table_name = ''|| v_out_nk_eszkcsp(a) ||'_'|| v_in_year(x) ||''; -- létezik az input tábla?
 	  IF v != 0 THEN
 
-	  PKD.AGAZAT_OSSZEVONAS_NK('84', '''84'', ''841'', ''842'', ''843'', ''844'', ''845'', ''846''', '''841'', ''842'', ''843'', ''844'', ''845'', ''846''', ''|| v_out_table ||'', ''|| v_out_nk_eszkcsp(a) ||'', ''|| F_V_99(b) ||'', ''|| v_szektorok(s) ||'', ''|| v_out_cfc(z) ||'', ''|| v_in_year(x) ||'');
+	  PKD19.AGAZAT_OSSZEVONAS_NK('84', '''84'', ''841'', ''842'', ''843'', ''844'', ''845'', ''846''', '''841'', ''842'', ''843'', ''844'', ''845'', ''846''', ''|| v_out_table ||'', ''|| v_out_nk_eszkcsp(a) ||'', ''|| F_V_99(b) ||'', ''|| v_szektorok(s) ||'', ''|| v_out_cfc(z) ||'', ''|| v_in_year(x) ||'');
 
 
 	  END IF;
@@ -1697,7 +1697,7 @@ FOR z IN v_out_cfc.FIRST..v_out_cfc.LAST LOOP
 
 			FOR b IN F_V_99a.FIRST..F_V_99a.LAST LOOP 
 
-				PKD.AGAZAT_OSSZEVONAS_NK('72', '''72'', ''723''', '''723''', ''|| v_out_table ||'', 'K_F', ''|| F_V_99(b) ||'', ''|| v_szektorok(s) ||'', ''|| v_out_cfc(z) ||'', ''|| v_in_year(x) ||'');		
+				PKD19.AGAZAT_OSSZEVONAS_NK('72', '''72'', ''723''', '''723''', ''|| v_out_table ||'', 'K_F', ''|| F_V_99(b) ||'', ''|| v_szektorok(s) ||'', ''|| v_out_cfc(z) ||'', ''|| v_in_year(x) ||'');		
 
 			END LOOP;
 
@@ -1733,7 +1733,7 @@ dbms_output.put_line('9. lépés START: ' || systimestamp);
 
 FOR s IN v_szektorok.FIRST..v_szektorok.LAST LOOP
 
-                sql_statement := 'SELECT COUNT(*) FROM PKD.'|| v_out_table ||' WHERE ALSZEKTOR = '''|| v_szektorok(s) ||''' ';
+                sql_statement := 'SELECT COUNT(*) FROM PKD19.'|| v_out_table ||' WHERE ALSZEKTOR = '''|| v_szektorok(s) ||''' ';
                 EXECUTE IMMEDIATE sql_statement INTO v;
                 IF v > 0 THEN
 
@@ -1743,19 +1743,19 @@ FOR s IN v_szektorok.FIRST..v_szektorok.LAST LOOP
 
                                                                FOR x IN v_in_year.FIRST..v_in_year.LAST LOOP
 
-                                               execute immediate 'select ROUND(SUM(NVL(ORIGINALS, 0))) from PKD.'|| v_out_table ||' WHERE F_V_99 = '''|| F_V_99(z) ||''' AND CFC_NET_GRS = '''|| v_out_cfc(b) ||''' AND EV = '''|| v_in_year(x) ||''' AND ALSZEKTOR = '''|| v_szektorok(s) ||'''' INTO sum_all_originals;
-                                               execute immediate 'select ROUND(SUM(NVL(FOLDJAVITAS, 0))) from PKD.'|| v_out_table ||' WHERE F_V_99 = '''|| F_V_99(z) ||''' AND CFC_NET_GRS = '''|| v_out_cfc(b) ||''' AND EV = '''|| v_in_year(x) ||''' AND ALSZEKTOR = '''|| v_szektorok(s) ||'''' INTO SUM_ALL_FOLDJAVITAS;                                      
-                                               execute immediate 'select ROUND(SUM(NVL(K_F, 0))) from PKD.'|| v_out_table ||' WHERE F_V_99 = '''|| F_V_99(z) ||''' AND CFC_NET_GRS = '''|| v_out_cfc(b) ||''' AND EV = '''|| v_in_year(x) ||''' AND ALSZEKTOR = '''|| v_szektorok(s) ||'''' INTO sum_all_K_F;
-                                               execute immediate 'select ROUND(SUM(NVL(FEGYVER, 0))) from PKD.'|| v_out_table ||' WHERE F_V_99 = '''|| F_V_99(z) ||''' AND CFC_NET_GRS = '''|| v_out_cfc(b) ||''' AND EV = '''|| v_in_year(x) ||''' AND ALSZEKTOR = '''|| v_szektorok(s) ||'''' INTO sum_all_FEGYVER;
-                                               execute immediate 'select ROUND(SUM(NVL(OWNSOFT, 0))) from PKD.'|| v_out_table ||' WHERE F_V_99 = '''|| F_V_99(z) ||''' AND CFC_NET_GRS = '''|| v_out_cfc(b) ||''' AND EV = '''|| v_in_year(x) ||''' AND ALSZEKTOR = '''|| v_szektorok(s) ||'''' INTO sum_all_OWNSOFT; 
-                                               execute immediate 'select ROUND(SUM(NVL(NOE6, 0))) from PKD.'|| v_out_table ||' WHERE F_V_99 = '''|| F_V_99(z) ||''' AND CFC_NET_GRS = '''|| v_out_cfc(b) ||''' AND EV = '''|| v_in_year(x) ||''' AND ALSZEKTOR = '''|| v_szektorok(s) ||'''' INTO sum_all_NOE6;           
-                                               execute immediate 'select ROUND(SUM(NVL(KISERTEKU, 0))) from PKD.'|| v_out_table ||' WHERE F_V_99 = '''|| F_V_99(z) ||''' AND CFC_NET_GRS = '''|| v_out_cfc(b) ||''' AND EV = '''|| v_in_year(x) ||''' AND ALSZEKTOR = '''|| v_szektorok(s) ||'''' INTO sum_all_KISERTEKU; 
-                                               execute immediate 'select ROUND(SUM(NVL(TCF, 0))) from PKD.'|| v_out_table ||' WHERE F_V_99 = '''|| F_V_99(z) ||''' AND CFC_NET_GRS = '''|| v_out_cfc(b) ||''' AND EV = '''|| v_in_year(x) ||''' AND ALSZEKTOR = '''|| v_szektorok(s) ||'''' INTO sum_all_TCF;          
-                                               execute immediate 'select ROUND(SUM(NVL(EGYEB_ORIG, 0))) from PKD.'|| v_out_table ||' WHERE F_V_99 = '''|| F_V_99(z) ||''' AND CFC_NET_GRS = '''|| v_out_cfc(b) ||''' AND EV = '''|| v_in_year(x) ||''' AND ALSZEKTOR = '''|| v_szektorok(s) ||'''' INTO sum_all_EGYEB_ORIG;            
-                                               execute immediate 'select ROUND(SUM(NVL(WIZZ, 0))) from PKD.'|| v_out_table ||' WHERE F_V_99 = '''|| F_V_99(z) ||''' AND CFC_NET_GRS = '''|| v_out_cfc(b) ||''' AND EV = '''|| v_in_year(x) ||''' AND ALSZEKTOR = '''|| v_szektorok(s) ||'''' INTO sum_all_WIZZ;            
+                                               execute immediate 'select ROUND(SUM(NVL(ORIGINALS, 0))) from PKD19.'|| v_out_table ||' WHERE F_V_99 = '''|| F_V_99(z) ||''' AND CFC_NET_GRS = '''|| v_out_cfc(b) ||''' AND EV = '''|| v_in_year(x) ||''' AND ALSZEKTOR = '''|| v_szektorok(s) ||'''' INTO sum_all_originals;
+                                               execute immediate 'select ROUND(SUM(NVL(FOLDJAVITAS, 0))) from PKD19.'|| v_out_table ||' WHERE F_V_99 = '''|| F_V_99(z) ||''' AND CFC_NET_GRS = '''|| v_out_cfc(b) ||''' AND EV = '''|| v_in_year(x) ||''' AND ALSZEKTOR = '''|| v_szektorok(s) ||'''' INTO SUM_ALL_FOLDJAVITAS;                                      
+                                               execute immediate 'select ROUND(SUM(NVL(K_F, 0))) from PKD19.'|| v_out_table ||' WHERE F_V_99 = '''|| F_V_99(z) ||''' AND CFC_NET_GRS = '''|| v_out_cfc(b) ||''' AND EV = '''|| v_in_year(x) ||''' AND ALSZEKTOR = '''|| v_szektorok(s) ||'''' INTO sum_all_K_F;
+                                               execute immediate 'select ROUND(SUM(NVL(FEGYVER, 0))) from PKD19.'|| v_out_table ||' WHERE F_V_99 = '''|| F_V_99(z) ||''' AND CFC_NET_GRS = '''|| v_out_cfc(b) ||''' AND EV = '''|| v_in_year(x) ||''' AND ALSZEKTOR = '''|| v_szektorok(s) ||'''' INTO sum_all_FEGYVER;
+                                               execute immediate 'select ROUND(SUM(NVL(OWNSOFT, 0))) from PKD19.'|| v_out_table ||' WHERE F_V_99 = '''|| F_V_99(z) ||''' AND CFC_NET_GRS = '''|| v_out_cfc(b) ||''' AND EV = '''|| v_in_year(x) ||''' AND ALSZEKTOR = '''|| v_szektorok(s) ||'''' INTO sum_all_OWNSOFT; 
+                                               execute immediate 'select ROUND(SUM(NVL(NOE6, 0))) from PKD19.'|| v_out_table ||' WHERE F_V_99 = '''|| F_V_99(z) ||''' AND CFC_NET_GRS = '''|| v_out_cfc(b) ||''' AND EV = '''|| v_in_year(x) ||''' AND ALSZEKTOR = '''|| v_szektorok(s) ||'''' INTO sum_all_NOE6;           
+                                               execute immediate 'select ROUND(SUM(NVL(KISERTEKU, 0))) from PKD19.'|| v_out_table ||' WHERE F_V_99 = '''|| F_V_99(z) ||''' AND CFC_NET_GRS = '''|| v_out_cfc(b) ||''' AND EV = '''|| v_in_year(x) ||''' AND ALSZEKTOR = '''|| v_szektorok(s) ||'''' INTO sum_all_KISERTEKU; 
+                                               execute immediate 'select ROUND(SUM(NVL(TCF, 0))) from PKD19.'|| v_out_table ||' WHERE F_V_99 = '''|| F_V_99(z) ||''' AND CFC_NET_GRS = '''|| v_out_cfc(b) ||''' AND EV = '''|| v_in_year(x) ||''' AND ALSZEKTOR = '''|| v_szektorok(s) ||'''' INTO sum_all_TCF;          
+                                               execute immediate 'select ROUND(SUM(NVL(EGYEB_ORIG, 0))) from PKD19.'|| v_out_table ||' WHERE F_V_99 = '''|| F_V_99(z) ||''' AND CFC_NET_GRS = '''|| v_out_cfc(b) ||''' AND EV = '''|| v_in_year(x) ||''' AND ALSZEKTOR = '''|| v_szektorok(s) ||'''' INTO sum_all_EGYEB_ORIG;            
+                                               execute immediate 'select ROUND(SUM(NVL(WIZZ, 0))) from PKD19.'|| v_out_table ||' WHERE F_V_99 = '''|| F_V_99(z) ||''' AND CFC_NET_GRS = '''|| v_out_cfc(b) ||''' AND EV = '''|| v_in_year(x) ||''' AND ALSZEKTOR = '''|| v_szektorok(s) ||'''' INTO sum_all_WIZZ;            
 
 
-tev_phad_sql_text := 'SELECT rowid sorid, ORIGINALS, FOLDJAVITAS, K_F, FEGYVER, OWNSOFT, NOE6, KISERTEKU, TCF, EGYEB_ORIG, WIZZ FROM PKD.'|| v_out_table ||' WHERE F_V_99 = '''|| F_V_99(z) ||''' AND CFC_NET_GRS = '''|| v_out_cfc(b) ||''' AND EV = '''|| v_in_year(x) ||''' AND ALSZEKTOR = '''|| v_szektorok(s) ||''' AND AGAZAT = ''SUM'' ';
+tev_phad_sql_text := 'SELECT rowid sorid, ORIGINALS, FOLDJAVITAS, K_F, FEGYVER, OWNSOFT, NOE6, KISERTEKU, TCF, EGYEB_ORIG, WIZZ FROM PKD19.'|| v_out_table ||' WHERE F_V_99 = '''|| F_V_99(z) ||''' AND CFC_NET_GRS = '''|| v_out_cfc(b) ||''' AND EV = '''|| v_in_year(x) ||''' AND ALSZEKTOR = '''|| v_szektorok(s) ||''' AND AGAZAT = ''SUM'' ';
 
 open ysum_cur_nk for tev_phad_sql_text;
 
@@ -1766,7 +1766,7 @@ open ysum_cur_nk for tev_phad_sql_text;
             begin
 
                 execute immediate '
-                                                               UPDATE PKD.'|| v_out_table ||' 
+                                                               UPDATE PKD19.'|| v_out_table ||' 
                 set
                                                                ORIGINALS = :sum_all_originals,
                                                                FOLDJAVITAS = :sum_all_foldjavitas,
@@ -1823,12 +1823,12 @@ FOR s IN v_szektorok.FIRST..v_szektorok.LAST LOOP
 
 FOR c IN 4..5 LOOP -- csak a LAKAS és MEZO értékeket vesszük át
 
-sql_statement := 'SELECT COUNT(*) FROM PKD.'|| v_out_table ||' WHERE ALSZEKTOR = '''|| v_szektorok(s) ||''' ';
+sql_statement := 'SELECT COUNT(*) FROM PKD19.'|| v_out_table ||' WHERE ALSZEKTOR = '''|| v_szektorok(s) ||''' ';
 EXECUTE IMMEDIATE sql_statement INTO v;
 
 IF v > 0 THEN
 
-sql_statement := 'SELECT COUNT(*) FROM PKD.'|| cfc_lakas ||' WHERE ALSZEKTOR = '''|| v_szektorok(s) ||''' ';
+sql_statement := 'SELECT COUNT(*) FROM PKD19.'|| cfc_lakas ||' WHERE ALSZEKTOR = '''|| v_szektorok(s) ||''' ';
 EXECUTE IMMEDIATE sql_statement INTO v;
 
 IF v > 0 THEN
@@ -1887,7 +1887,7 @@ IF v > 0 THEN
 
                                EXECUTE IMMEDIATE
                  'DECLARE
-                    CURSOR INS_OPS IS SELECT F_V, OUTPUT, ALSZEKTOR, ESZKOZ, AGAZAT, ROUND('|| v_update ||') as UPD FROM PKD.'|| cfc_lakas ||' 
+                    CURSOR INS_OPS IS SELECT F_V, OUTPUT, ALSZEKTOR, ESZKOZ, AGAZAT, ROUND('|| v_update ||') as UPD FROM PKD19.'|| cfc_lakas ||' 
                                                WHERE ESZKOZ = '''|| v_out_nk_up_c(c) ||''' AND ALSZEKTOR = '''|| v_szektorok(s) ||''';
                     TYPE INS_ARRAY IS TABLE OF INS_OPS%ROWTYPE;
                     INS_OPS_ARRAY INS_ARRAY;
@@ -1896,7 +1896,7 @@ IF v > 0 THEN
                     LOOP
                       FETCH INS_OPS BULK COLLECT INTO INS_OPS_ARRAY;
                       FORALL I IN INS_OPS_ARRAY.FIRST..INS_OPS_ARRAY.LAST
-                               UPDATE PKD.'|| v_out_table ||' 
+                               UPDATE PKD19.'|| v_out_table ||' 
                                SET '|| v_out_nk_up(c) ||' = INS_OPS_ARRAY(I).UPD
                                WHERE ALSZEKTOR = INS_OPS_ARRAY(I).ALSZEKTOR AND CFC_NET_GRS = INS_OPS_ARRAY(I).OUTPUT AND EV = '''|| v_in_year(b) ||''' AND AGAZAT = INS_OPS_ARRAY(I).AGAZAT AND F_V_99 = INS_OPS_ARRAY(I).F_V;
 
@@ -1911,18 +1911,18 @@ IF v > 0 THEN
 
                                FOR y IN F_V_99.FIRST..F_V_99.LAST LOOP
 
-                                 sql_statement := 'SELECT COUNT(*) FROM PKD.'|| v_out_table ||' WHERE EV = '''|| v_in_year(b) ||''' AND ALSZEKTOR = '''|| v_szektorok(s) ||''' AND CFC_NET_GRS = '''|| v_out_cfc(x) ||''' AND F_V_99 = '''|| F_V_99(y) ||''' ';
+                                 sql_statement := 'SELECT COUNT(*) FROM PKD19.'|| v_out_table ||' WHERE EV = '''|| v_in_year(b) ||''' AND ALSZEKTOR = '''|| v_szektorok(s) ||''' AND CFC_NET_GRS = '''|| v_out_cfc(x) ||''' AND F_V_99 = '''|| F_V_99(y) ||''' ';
                                  EXECUTE IMMEDIATE sql_statement INTO v;
 
                                                IF v > 0 THEN
 
                                                                EXECUTE IMMEDIATE'
-                                                               UPDATE PKD.'|| v_out_table ||'
+                                                               UPDATE PKD19.'|| v_out_table ||'
                                                                SET '|| v_out_nk_up(c) ||' = 
                                                                (SELECT SUM(NVL('|| v_out_nk_up(c) ||', 0))
-                                                               FROM PKD.'|| v_out_table ||'
-                                                               WHERE EV = '''|| v_in_year(b) ||''' AND ALSZEKTOR = '''|| v_szektorok(s) ||''' AND CFC_NET_GRS = '''|| v_out_cfc(x) ||''' AND F_V_99 = '''|| F_V_99(y) ||'''  AND AGAZAT != ''SUM'')
-                                                               WHERE AGAZAT = ''SUM'' AND EV = '''|| v_in_year(b) ||''' AND ALSZEKTOR = '''|| v_szektorok(s) ||''' AND CFC_NET_GRS = '''|| v_out_cfc(x) ||''' AND F_V_99 = '''|| F_V_99(y) ||'''
+                                                               FROM PKD19.'|| v_out_table ||'
+                                                               WHERE AGAZAT != ''SUM'' AND ALSZEKTOR = '''|| v_szektorok(s) ||''' AND CFC_NET_GRS = '''|| v_out_cfc(x) ||''' AND EV = '''|| v_in_year(b) ||''' AND F_V_99 = '''|| F_V_99(y) ||''')
+                                                               WHERE AGAZAT = ''SUM'' AND ALSZEKTOR = '''|| v_szektorok(s) ||''' AND CFC_NET_GRS = '''|| v_out_cfc(x) ||''' AND EV = '''|| v_in_year(b) ||''' AND F_V_99 = '''|| F_V_99(y) ||'''
                                                                '
                                                                ;
 
@@ -1944,7 +1944,7 @@ END LOOP;
 
 dbms_output.put_line('10. lépés STOP: ' || systimestamp);
 
--- 11.lépés: CFC_BES_VALL_F táblából az F adatok átvétele a BESOROLT_VALL mezőbe S1311a és S1313a esetén, V érték számítás 2018-ig bezárólag
+-- 11.lépés: C_IMP_BES_VALL táblából az F adatok átvétele a BESOROLT_VALL mezőbe S1311a és S1313a esetén, V érték számítás 2018-ig bezárólag
 
 dbms_output.put_line('11. lépés START: ' || systimestamp);
 
@@ -1952,7 +1952,7 @@ FOR s IN v_szektorok.FIRST..v_szektorok.LAST LOOP
 
                 IF ''|| v_szektorok(s) ||'' IN ('S1311a', 'S1313a') THEN
 
-                sql_statement := 'SELECT COUNT(*) FROM PKD.'|| v_out_table ||' WHERE ALSZEKTOR = '''|| v_szektorok(s) ||''' ';
+                sql_statement := 'SELECT COUNT(*) FROM PKD19.'|| v_out_table ||' WHERE ALSZEKTOR = '''|| v_szektorok(s) ||''' ';
                 EXECUTE IMMEDIATE sql_statement INTO v;
 
                 IF v > 0 THEN
@@ -2011,7 +2011,7 @@ FOR s IN v_szektorok.FIRST..v_szektorok.LAST LOOP
 
                                EXECUTE IMMEDIATE
                  'DECLARE
-                    CURSOR INS_OPS IS SELECT ALSZEKTOR, AGAZAT, ROUND('|| v_update ||') as UPD FROM PKD.'|| cfc_besorolt ||' WHERE ALSZEKTOR = '''|| v_szektorok(s) ||''';
+                    CURSOR INS_OPS IS SELECT ALSZEKTOR, AGAZAT, ROUND('|| v_update ||') as UPD FROM PKD19.'|| cfc_besorolt ||' WHERE ALSZEKTOR = '''|| v_szektorok(s) ||''';
                     TYPE INS_ARRAY IS TABLE OF INS_OPS%ROWTYPE;
                     INS_OPS_ARRAY INS_ARRAY;
                   BEGIN
@@ -2019,7 +2019,7 @@ FOR s IN v_szektorok.FIRST..v_szektorok.LAST LOOP
                     LOOP
                       FETCH INS_OPS BULK COLLECT INTO INS_OPS_ARRAY;
                       FORALL I IN INS_OPS_ARRAY.FIRST..INS_OPS_ARRAY.LAST
-                               UPDATE PKD.'|| v_out_table ||' 
+                               UPDATE PKD19.'|| v_out_table ||' 
                                SET BESOROLT_VALL = INS_OPS_ARRAY(I).UPD
                                WHERE ALSZEKTOR = INS_OPS_ARRAY(I).ALSZEKTOR AND EV = '''|| v_in_year(b) ||''' AND AGAZAT = INS_OPS_ARRAY(I).AGAZAT AND F_V_99 = ''F'' AND CFC_NET_GRS = ''cfc'';
 
@@ -2033,21 +2033,20 @@ FOR s IN v_szektorok.FIRST..v_szektorok.LAST LOOP
 
                   FOR a IN v_out_eszkcsp_c.FIRST..v_out_eszkcsp_c.LAST LOOP
 
-                  sql_statement := 'SELECT AGAZAT FROM PKD.'|| cfc_besorolt_a ||' WHERE '|| v_out_eszkcsp_c(a) ||' IS NOT NULL AND ALSZEKTOR = '''|| v_szektorok(s) ||''' ';
+                  sql_statement := 'SELECT AGAZAT FROM PKD19.'|| cfc_besorolt_a ||' WHERE '|| v_out_eszkcsp_c(a) ||' IS NOT NULL AND ALSZEKTOR = '''|| v_szektorok(s) ||''' ';
                   EXECUTE IMMEDIATE sql_statement BULK COLLECT INTO v_agazat;
 
                                FOR c IN v_agazat.FIRST..v_agazat.LAST LOOP
 
                   -- arányok alapján szétosztás a mezők között (klasszikus mezők)
                                EXECUTE IMMEDIATE'
-                               UPDATE PKD.'|| v_out_table ||' 
+                               UPDATE PKD19.'|| v_out_table ||' 
                                SET '|| v_out_eszkcsp(a) ||' =
                                (SELECT ROUND(a.BESOROLT_VALL * (0.01 * b.'|| v_out_eszkcsp_c(a) ||'))
-                               FROM PKD.'|| v_out_table ||' a INNER JOIN '|| cfc_besorolt_a ||' b ON a.AGAZAT = b.AGAZAT AND a.ALSZEKTOR = b.ALSZEKTOR WHERE a.ALSZEKTOR = '''|| v_szektorok(s) ||''' AND a.AGAZAT = '''|| v_agazat(c) ||''' AND a.EV = '''|| v_in_year(b) ||''' AND a.F_V_99 = ''F'' AND a.CFC_NET_GRS = ''cfc'')
+                               FROM PKD19.'|| v_out_table ||' a INNER JOIN '|| cfc_besorolt_a ||' b ON a.AGAZAT = b.AGAZAT AND a.ALSZEKTOR = b.ALSZEKTOR WHERE a.ALSZEKTOR = '''|| v_szektorok(s) ||''' AND a.AGAZAT = '''|| v_agazat(c) ||''' AND a.EV = '''|| v_in_year(b) ||''' AND a.F_V_99 = ''F'' AND a.CFC_NET_GRS = ''cfc'')
                                WHERE ALSZEKTOR = '''|| v_szektorok(s) ||''' AND EV = '''|| v_in_year(b) ||''' AND AGAZAT = '''|| v_agazat(c) ||''' AND F_V_99 = ''F'' AND CFC_NET_GRS = ''cfc''
                                '
                                ;
-
 
                                COMMIT;
 
@@ -2057,7 +2056,7 @@ FOR s IN v_szektorok.FIRST..v_szektorok.LAST LOOP
 
 
 -- SUM_CLASSIC kiszámítása 
-tev_phad_sql_text := 'SELECT rowid sorid, EPULET, GYORSGEP, TARTOSGEP, JARMU, SZOFTVER FROM PKD.'|| v_out_table ||' ';
+tev_phad_sql_text := 'SELECT rowid sorid, EPULET, GYORSGEP, TARTOSGEP, JARMU, SZOFTVER FROM PKD19.'|| v_out_table ||' ';
 
 open ysum_cur for tev_phad_sql_text;
 
@@ -2068,7 +2067,7 @@ open ysum_cur for tev_phad_sql_text;
             begin
 
                 execute immediate '
-                                                               UPDATE PKD.'|| v_out_table ||' 
+                                                               UPDATE PKD19.'|| v_out_table ||' 
                 set
                 SUM_CLASSIC = :sum_classic
                                                                WHERE rowid=:sorid
@@ -2088,42 +2087,42 @@ commit;
 
 FOR a IN 13..v_in_year.LAST LOOP  --2007-től
 
-sql_statement := 'SELECT COUNT(*) FROM PKD.'|| v_out_table ||' WHERE BESOROLT_VALL != SUM_CLASSIC AND ALSZEKTOR = '''|| v_szektorok(s) ||''' AND SUM_CLASSIC IS NOT NULL AND EV = '''|| v_in_year(a) ||''' AND AGAZAT != ''SUM'' ';
+sql_statement := 'SELECT COUNT(*) FROM PKD19.'|| v_out_table ||' WHERE BESOROLT_VALL != SUM_CLASSIC AND ALSZEKTOR = '''|| v_szektorok(s) ||''' AND SUM_CLASSIC IS NOT NULL AND EV = '''|| v_in_year(a) ||''' AND AGAZAT != ''SUM'' ';
 EXECUTE IMMEDIATE sql_statement INTO v;
 
 IF v > 0 THEN
 
-sql_statement := 'SELECT AGAZAT FROM PKD.'|| v_out_table ||' WHERE BESOROLT_VALL != SUM_CLASSIC AND ALSZEKTOR = '''|| v_szektorok(s) ||''' AND SUM_CLASSIC IS NOT NULL AND EV = '''|| v_in_year(a) ||''' AND AGAZAT != ''SUM''';
+sql_statement := 'SELECT AGAZAT FROM PKD19.'|| v_out_table ||' WHERE BESOROLT_VALL != SUM_CLASSIC AND ALSZEKTOR = '''|| v_szektorok(s) ||''' AND SUM_CLASSIC IS NOT NULL AND EV = '''|| v_in_year(a) ||''' AND AGAZAT != ''SUM''';
 EXECUTE IMMEDIATE sql_statement BULK COLLECT INTO v_agazat;
 
 FOR b IN v_agazat.FIRST..v_agazat.LAST LOOP
 
-                sql_statement := 'SELECT EPULET FROM PKD.'|| v_out_table ||' WHERE EV = '''|| v_in_year(a) ||''' AND AGAZAT = '''|| v_agazat(b) ||''' AND ALSZEKTOR = '''|| v_szektorok(s) ||''' AND cfc_net_grs = ''cfc'' and F_V_99 = ''F'' ';
+                sql_statement := 'SELECT EPULET FROM PKD19.'|| v_out_table ||' WHERE AGAZAT = '''|| v_agazat(b) ||''' AND ALSZEKTOR = '''|| v_szektorok(s) ||''' AND cfc_net_grs = ''cfc'' AND EV = '''|| v_in_year(a) ||''' and F_V_99 = ''F'' ';
                 EXECUTE IMMEDIATE sql_statement INTO bes_vall_ertek1;
 
-                sql_statement := 'SELECT TARTOSGEP FROM PKD.'|| v_out_table ||' WHERE EV = '''|| v_in_year(a) ||''' AND AGAZAT = '''|| v_agazat(b) ||''' AND ALSZEKTOR = '''|| v_szektorok(s) ||''' AND cfc_net_grs = ''cfc'' and F_V_99 = ''F'' ';
+                sql_statement := 'SELECT TARTOSGEP FROM PKD19.'|| v_out_table ||' WHERE AGAZAT = '''|| v_agazat(b) ||''' AND ALSZEKTOR = '''|| v_szektorok(s) ||''' AND cfc_net_grs = ''cfc'' AND EV = '''|| v_in_year(a) ||''' and F_V_99 = ''F'' ';
                 EXECUTE IMMEDIATE sql_statement INTO bes_vall_ertek2;
 
                 IF bes_vall_ertek2 > bes_vall_ertek1 THEN bes_vall_ertek := bes_vall_ertek2; ELSE bes_vall_ertek := bes_vall_ertek1; END IF;
                 IF bes_vall_ertek2 > bes_vall_ertek1 THEN bes_vall_eszkoz := 'TARTOSGEP'; ELSE bes_vall_eszkoz := 'EPULET'; END IF;
 
-                sql_statement := 'SELECT GYORSGEP FROM PKD.'|| v_out_table ||' WHERE EV = '''|| v_in_year(a) ||''' AND AGAZAT = '''|| v_agazat(b) ||''' AND ALSZEKTOR = '''|| v_szektorok(s) ||''' AND cfc_net_grs = ''cfc'' and F_V_99 = ''F'' ';
+                sql_statement := 'SELECT GYORSGEP FROM PKD19.'|| v_out_table ||' WHERE AGAZAT = '''|| v_agazat(b) ||''' AND ALSZEKTOR = '''|| v_szektorok(s) ||''' AND cfc_net_grs = ''cfc'' AND EV = '''|| v_in_year(a) ||''' and F_V_99 = ''F'' ';
                 EXECUTE IMMEDIATE sql_statement INTO bes_vall_ertek3;
 
                 IF bes_vall_ertek3 > bes_vall_ertek THEN bes_vall_ertek := bes_vall_ertek3; bes_vall_eszkoz := 'GYORSGEP'; END IF;
 
-                sql_statement := 'SELECT JARMU FROM PKD.'|| v_out_table ||' WHERE EV = '''|| v_in_year(a) ||''' AND AGAZAT = '''|| v_agazat(b) ||''' AND ALSZEKTOR = '''|| v_szektorok(s) ||''' AND cfc_net_grs = ''cfc'' and F_V_99 = ''F'' ';
+                sql_statement := 'SELECT JARMU FROM PKD19.'|| v_out_table ||' WHERE AGAZAT = '''|| v_agazat(b) ||''' AND ALSZEKTOR = '''|| v_szektorok(s) ||''' AND cfc_net_grs = ''cfc'' AND EV = '''|| v_in_year(a) ||''' and F_V_99 = ''F'' ';
                 EXECUTE IMMEDIATE sql_statement INTO bes_vall_ertek4;
 
                 IF bes_vall_ertek4 > bes_vall_ertek THEN bes_vall_ertek := bes_vall_ertek4; bes_vall_eszkoz := 'JARMU'; END IF;
 
-                sql_statement := 'SELECT SZOFTVER FROM PKD.'|| v_out_table ||' WHERE EV = '''|| v_in_year(a) ||''' AND AGAZAT = '''|| v_agazat(b) ||''' AND ALSZEKTOR = '''|| v_szektorok(s) ||''' AND cfc_net_grs = ''cfc'' and F_V_99 = ''F'' ';
+                sql_statement := 'SELECT SZOFTVER FROM PKD19.'|| v_out_table ||' WHERE AGAZAT = '''|| v_agazat(b) ||''' AND ALSZEKTOR = '''|| v_szektorok(s) ||''' AND cfc_net_grs = ''cfc'' AND EV = '''|| v_in_year(a) ||''' and F_V_99 = ''F'' ';
                 EXECUTE IMMEDIATE sql_statement INTO bes_vall_ertek5;
 
                 IF bes_vall_ertek5 > bes_vall_ertek THEN bes_vall_ertek := bes_vall_ertek5; bes_vall_eszkoz := 'SZOFTVER';                END IF;
 
                 EXECUTE IMMEDIATE'
-                UPDATE PKD.'|| v_out_table ||'
+                UPDATE PKD19.'|| v_out_table ||'
                 SET SUM_CLASSIC = BESOROLT_VALL,
                 '|| bes_vall_eszkoz ||' = '|| bes_vall_eszkoz ||' + (BESOROLT_VALL - SUM_CLASSIC)
                 WHERE EV = '''|| v_in_year(a) ||''' AND AGAZAT = '''|| v_agazat(b) ||''' AND ALSZEKTOR = '''|| v_szektorok(s) ||''' AND cfc_net_grs = ''cfc'' and F_V_99 = ''F''
@@ -2145,12 +2144,12 @@ END LOOP;
                 --            S1311a V = S1311a xxx(F) / (S1311 XXX (F) / S1311 XXX (V)) 
                 --            S1313a V = S1313a xxx(F) / (S1313 XXX (F) / S1313 XXX (V))
 
-                sql_statement := 'SELECT COUNT(*) FROM PKD.'|| v_out_table ||' WHERE '|| v_out_eszkcsp(c) ||' != 0 AND '|| v_out_eszkcsp(c) ||' IS NOT NULL AND EV = '''|| v_in_year(b) ||''' AND ALSZEKTOR =  '''|| v_szektorok(s) ||''' ';
+                sql_statement := 'SELECT COUNT(*) FROM PKD19.'|| v_out_table ||' WHERE '|| v_out_eszkcsp(c) ||' != 0 AND '|| v_out_eszkcsp(c) ||' IS NOT NULL AND EV = '''|| v_in_year(b) ||''' AND ALSZEKTOR =  '''|| v_szektorok(s) ||''' ';
                 EXECUTE IMMEDIATE sql_statement INTO v;
 
                 IF v > 0 THEN
 
-                sql_statement := 'SELECT DISTINCT AGAZAT FROM PKD.'|| v_out_table ||' WHERE '|| v_out_eszkcsp(c) ||' != 0 AND '|| v_out_eszkcsp(c) ||' IS NOT NULL AND '|| v_out_eszkcsp(c) ||' != 0 AND '|| v_out_eszkcsp(c) ||' IS NOT NULL AND EV = '''|| v_in_year(b) ||''' AND ALSZEKTOR =  '''|| v_szektorok(s) ||''' AND F_V_99 = ''F'' ';
+                sql_statement := 'SELECT DISTINCT AGAZAT FROM PKD19.'|| v_out_table ||' WHERE '|| v_out_eszkcsp(c) ||' != 0 AND '|| v_out_eszkcsp(c) ||' IS NOT NULL AND '|| v_out_eszkcsp(c) ||' != 0 AND '|| v_out_eszkcsp(c) ||' IS NOT NULL AND EV = '''|| v_in_year(b) ||''' AND ALSZEKTOR =  '''|| v_szektorok(s) ||''' AND F_V_99 = ''F'' ';
                 EXECUTE IMMEDIATE sql_statement BULK COLLECT INTO v_agazat;
 
                                FOR a IN v_agazat.FIRST..v_agazat.LAST LOOP
@@ -2158,11 +2157,11 @@ END LOOP;
                                IF ''|| v_szektorok(s) ||'' = 'S1311a' THEN
 
                                  EXECUTE IMMEDIATE'
-                                 UPDATE PKD.'|| v_out_table ||'
+                                 UPDATE PKD19.'|| v_out_table ||'
                                  SET '|| v_out_eszkcsp(c) ||' = 
-                                 (SELECT ROUND((SELECT '|| v_out_eszkcsp(c) ||' FROM PKD.'|| v_out_table ||' WHERE EV = '''|| v_in_year(b) ||''' AND F_V_99 = ''F'' AND CFC_NET_GRS = ''cfc'' AND ALSZEKTOR = ''S1311a'' AND AGAZAT = '''|| v_agazat(a) ||''') / ((SELECT a.'|| v_out_eszkcsp(c) ||' FROM PKD.'|| v_out_table ||' a WHERE a.EV = '''|| v_in_year(b) ||''' AND a.F_V_99 = ''F'' AND a.CFC_NET_GRS = ''cfc'' AND a.ALSZEKTOR = ''S1311'' AND a.'|| v_out_eszkcsp(c) ||' != 0 AND a.AGAZAT = '''|| v_agazat(a) ||''') / (SELECT b.'|| v_out_eszkcsp(c) ||' FROM PKD.'|| v_out_table ||' b WHERE b.EV = '''|| v_in_year(b) ||''' AND b.F_V_99 = ''V'' AND b.CFC_NET_GRS = ''cfc'' AND b.ALSZEKTOR = ''S1311'' AND b.'|| v_out_eszkcsp(c) ||' != 0 AND b.AGAZAT = '''|| v_agazat(a) ||''')))
+                                 (SELECT ROUND((SELECT '|| v_out_eszkcsp(c) ||' FROM PKD19.'|| v_out_table ||' WHERE AGAZAT = '''|| v_agazat(a) ||''' AND ALSZEKTOR = ''S1311a'' AND CFC_NET_GRS = ''cfc'' AND EV = '''|| v_in_year(b) ||''' AND F_V_99 = ''F'') / ((SELECT a.'|| v_out_eszkcsp(c) ||' FROM PKD19.'|| v_out_table ||' a WHERE a.AGAZAT = '''|| v_agazat(a) ||''' AND a.ALSZEKTOR = ''S1311'' AND a.CFC_NET_GRS = ''cfc'' AND a.EV = '''|| v_in_year(b) ||''' AND a.F_V_99 = ''F'' AND a.'|| v_out_eszkcsp(c) ||' != 0) / (SELECT b.'|| v_out_eszkcsp(c) ||' FROM PKD19.'|| v_out_table ||' b WHERE b.AGAZAT = '''|| v_agazat(a) ||''' AND b.ALSZEKTOR = ''S1311'' AND b.CFC_NET_GRS = ''cfc'' AND b.EV = '''|| v_in_year(b) ||''' AND b.F_V_99 = ''V'' AND b.'|| v_out_eszkcsp(c) ||' != 0)))
                                  FROM dual)
-                                 WHERE AGAZAT = '''|| v_agazat(a) ||''' AND F_V_99 = ''V'' AND CFC_NET_GRS = ''cfc'' AND ALSZEKTOR = ''S1311a'' AND EV = '''|| v_in_year(b) ||'''
+                                 WHERE AGAZAT = '''|| v_agazat(a) ||''' AND ALSZEKTOR = ''S1311a'' AND CFC_NET_GRS = ''cfc'' AND EV = '''|| v_in_year(b) ||''' AND F_V_99 = ''V'' 
                                  '
                                  ;
 
@@ -2171,11 +2170,11 @@ END LOOP;
                                ELSIF ''|| v_szektorok(s) ||'' = 'S1313a' THEN
 
                                  EXECUTE IMMEDIATE'
-                                 UPDATE PKD.'|| v_out_table ||'
+                                 UPDATE PKD19.'|| v_out_table ||'
                                  SET '|| v_out_eszkcsp(c) ||' = 
-                                 (SELECT ROUND((SELECT '|| v_out_eszkcsp(c) ||' FROM PKD.'|| v_out_table ||' WHERE EV = '''|| v_in_year(b) ||''' AND F_V_99 = ''F'' AND CFC_NET_GRS = ''cfc'' AND ALSZEKTOR = ''S1313a'' AND AGAZAT = '''|| v_agazat(a) ||''') / ((SELECT a.'|| v_out_eszkcsp(c) ||' FROM PKD.'|| v_out_table ||' a WHERE a.EV = '''|| v_in_year(b) ||''' AND a.F_V_99 = ''F'' AND a.CFC_NET_GRS = ''cfc'' AND a.ALSZEKTOR = ''S1313'' AND a.'|| v_out_eszkcsp(c) ||' != 0 AND a.AGAZAT = '''|| v_agazat(a) ||''') / (SELECT b.'|| v_out_eszkcsp(c) ||' FROM PKD.'|| v_out_table ||' b WHERE b.EV = '''|| v_in_year(b) ||''' AND b.F_V_99 = ''V'' AND b.CFC_NET_GRS = ''cfc'' AND b.ALSZEKTOR = ''S1313'' AND b.'|| v_out_eszkcsp(c) ||' != 0 AND b.AGAZAT = '''|| v_agazat(a) ||''')))
+                                 (SELECT ROUND((SELECT '|| v_out_eszkcsp(c) ||' FROM PKD19.'|| v_out_table ||' WHERE AGAZAT = '''|| v_agazat(a) ||''' AND ALSZEKTOR = ''S1313a'' AND CFC_NET_GRS = ''cfc'' AND EV = '''|| v_in_year(b) ||''' AND F_V_99 = ''F'') / ((SELECT a.'|| v_out_eszkcsp(c) ||' FROM PKD19.'|| v_out_table ||' a WHERE a.AGAZAT = '''|| v_agazat(a) ||''' AND a.ALSZEKTOR = ''S1313'' AND a.CFC_NET_GRS = ''cfc'' AND a.EV = '''|| v_in_year(b) ||''' AND a.F_V_99 = ''F'' AND a.'|| v_out_eszkcsp(c) ||' != 0) / (SELECT b.'|| v_out_eszkcsp(c) ||' FROM PKD19.'|| v_out_table ||' b WHERE b.AGAZAT = '''|| v_agazat(a) ||''' AND b.ALSZEKTOR = ''S1313'' AND b.CFC_NET_GRS = ''cfc'' AND b.EV = '''|| v_in_year(b) ||''' AND b.F_V_99 = ''V'' AND b.'|| v_out_eszkcsp(c) ||' != 0)))
                                  FROM dual)
-                                 WHERE AGAZAT = '''|| v_agazat(a) ||''' AND F_V_99 = ''V'' AND CFC_NET_GRS = ''cfc'' AND ALSZEKTOR = ''S1313a'' AND EV = '''|| v_in_year(b) ||'''
+                                 WHERE AGAZAT = '''|| v_agazat(a) ||''' AND ALSZEKTOR = ''S1313a'' AND CFC_NET_GRS = ''cfc'' AND EV = '''|| v_in_year(b) ||''' AND F_V_99 = ''V''
                                  '
                                  ;
 
@@ -2192,29 +2191,29 @@ END LOOP;
                 --            S1311a V = S1311a xxx(F) / (S1311 SUM XXX (F) / S1311 SUM XXX (V)) -- 15 / 268142 / 251067
                 --            S1313a V = S1313a xxx(F) / (S1313 SUM XXX (F) / S1313 SUM XXX (V))
 
-                sql_statement := 'SELECT COUNT(*) FROM PKD.'|| v_out_table ||' WHERE '|| v_out_eszkcsp(c) ||' != 0 AND '|| v_out_eszkcsp(c) ||' IS NOT NULL AND EV = '''|| v_in_year(b) ||''' AND ALSZEKTOR =  '''|| v_szektorok(s) ||''' AND F_V_99 = ''F'' ';
+                sql_statement := 'SELECT COUNT(*) FROM PKD19.'|| v_out_table ||' WHERE '|| v_out_eszkcsp(c) ||' != 0 AND '|| v_out_eszkcsp(c) ||' IS NOT NULL AND EV = '''|| v_in_year(b) ||''' AND ALSZEKTOR =  '''|| v_szektorok(s) ||''' AND F_V_99 = ''F'' ';
                 EXECUTE IMMEDIATE sql_statement INTO v;
 
                 IF v > 0 THEN
 
-                sql_statement := 'SELECT DISTINCT AGAZAT FROM PKD.'|| v_out_table ||' WHERE '|| v_out_eszkcsp(c) ||' != 0 AND '|| v_out_eszkcsp(c) ||' IS NOT NULL AND EV = '''|| v_in_year(b) ||''' AND ALSZEKTOR =  '''|| v_szektorok(s) ||''' ';
+                sql_statement := 'SELECT DISTINCT AGAZAT FROM PKD19.'|| v_out_table ||' WHERE '|| v_out_eszkcsp(c) ||' != 0 AND '|| v_out_eszkcsp(c) ||' IS NOT NULL AND EV = '''|| v_in_year(b) ||''' AND ALSZEKTOR =  '''|| v_szektorok(s) ||''' ';
                 EXECUTE IMMEDIATE sql_statement BULK COLLECT INTO v_agazat;
 
                                FOR a IN v_agazat.FIRST..v_agazat.LAST LOOP
 
                                IF ''|| v_szektorok(s) ||'' = 'S1311a' THEN
 
-                               sql_statement := 'SELECT NVL('|| v_out_eszkcsp(c) ||', 0) FROM PKD.'|| v_out_table ||' WHERE EV = '''|| v_in_year(b) ||''' AND F_V_99 = ''F'' AND CFC_NET_GRS = ''cfc'' AND ALSZEKTOR = ''S1311'' AND AGAZAT = '''|| v_agazat(a) ||''' ';           
+                               sql_statement := 'SELECT NVL('|| v_out_eszkcsp(c) ||', 0) FROM PKD19.'|| v_out_table ||' WHERE AGAZAT = '''|| v_agazat(a) ||''' AND ALSZEKTOR = ''S1311'' AND CFC_NET_GRS = ''cfc'' AND EV = '''|| v_in_year(b) ||''' AND F_V_99 = ''F''  ';           
                                EXECUTE IMMEDIATE sql_statement INTO v;
 
                                IF v = 0 THEN
 
                                  EXECUTE IMMEDIATE'
-                                 UPDATE PKD.'|| v_out_table ||'
+                                 UPDATE PKD19.'|| v_out_table ||'
                                  SET '|| v_out_eszkcsp(c) ||' = 
-                                 (SELECT ROUND((SELECT '|| v_out_eszkcsp(c) ||' FROM PKD.'|| v_out_table ||' WHERE EV = '''|| v_in_year(b) ||''' AND F_V_99 = ''F'' AND CFC_NET_GRS = ''cfc'' AND ALSZEKTOR = ''S1311a'' AND AGAZAT = '''|| v_agazat(a) ||''') / ((SELECT a.'|| v_out_eszkcsp(c) ||' FROM PKD.'|| v_out_table ||' a WHERE a.EV = '''|| v_in_year(b) ||''' AND a.F_V_99 = ''F'' AND a.CFC_NET_GRS = ''cfc'' AND a.ALSZEKTOR = ''S1311'' AND a.AGAZAT = ''SUM'') / (SELECT b.'|| v_out_eszkcsp(c) ||' FROM PKD.'|| v_out_table ||' b WHERE b.EV = '''|| v_in_year(b) ||''' AND b.F_V_99 = ''V'' AND b.CFC_NET_GRS = ''cfc'' AND b.ALSZEKTOR = ''S1311'' AND b.AGAZAT = ''SUM'')))
+                                 (SELECT ROUND((SELECT '|| v_out_eszkcsp(c) ||' FROM PKD19.'|| v_out_table ||' WHERE AGAZAT = '''|| v_agazat(a) ||''' AND ALSZEKTOR = ''S1311a'' AND CFC_NET_GRS = ''cfc'' AND EV = '''|| v_in_year(b) ||''' AND F_V_99 = ''F'') / ((SELECT a.'|| v_out_eszkcsp(c) ||' FROM PKD19.'|| v_out_table ||' a WHERE a.AGAZAT = ''SUM'' AND a.ALSZEKTOR = ''S1311'' AND a.CFC_NET_GRS = ''cfc'' AND a.EV = '''|| v_in_year(b) ||''' AND a.F_V_99 = ''F'') / (SELECT b.'|| v_out_eszkcsp(c) ||' FROM PKD19.'|| v_out_table ||' b WHERE b.AGAZAT = ''SUM'' AND b.ALSZEKTOR = ''S1311'' AND b.CFC_NET_GRS = ''cfc'' AND b.EV = '''|| v_in_year(b) ||''' AND b.F_V_99 = ''V'')))
                                  FROM dual)
-                                 WHERE AGAZAT = '''|| v_agazat(a) ||''' AND F_V_99 = ''V'' AND CFC_NET_GRS = ''cfc'' AND ALSZEKTOR = ''S1311a'' AND EV = '''|| v_in_year(b) ||'''
+                                 WHERE AGAZAT = '''|| v_agazat(a) ||''' AND ALSZEKTOR = ''S1311a'' AND CFC_NET_GRS = ''cfc'' AND EV = '''|| v_in_year(b) ||''' AND F_V_99 = ''V''
                                  '
                                  ;
 
@@ -2224,17 +2223,17 @@ END LOOP;
 
                                ELSIF ''|| v_szektorok(s) ||'' = 'S1313a' THEN  
 
-                               sql_statement := 'SELECT NVL('|| v_out_eszkcsp(c) ||', 0) FROM PKD.'|| v_out_table ||' WHERE EV = '''|| v_in_year(b) ||''' AND F_V_99 = ''F'' AND CFC_NET_GRS = ''cfc'' AND ALSZEKTOR = ''S1313'' AND AGAZAT = '''|| v_agazat(a) ||''' ';           
+                               sql_statement := 'SELECT NVL('|| v_out_eszkcsp(c) ||', 0) FROM PKD19.'|| v_out_table ||' WHERE AGAZAT = '''|| v_agazat(a) ||''' AND ALSZEKTOR = ''S1313'' AND CFC_NET_GRS = ''cfc'' AND EV = '''|| v_in_year(b) ||''' AND F_V_99 = ''F''    ';           
                                EXECUTE IMMEDIATE sql_statement INTO v;
 
                                IF v = 0 THEN
 
                                  EXECUTE IMMEDIATE'
-                                 UPDATE PKD.'|| v_out_table ||'
+                                 UPDATE PKD19.'|| v_out_table ||'
                                  SET '|| v_out_eszkcsp(c) ||' = 
-                                 (SELECT ROUND((SELECT '|| v_out_eszkcsp(c) ||' FROM PKD.'|| v_out_table ||' WHERE EV = '''|| v_in_year(b) ||''' AND F_V_99 = ''F'' AND CFC_NET_GRS = ''cfc'' AND ALSZEKTOR = ''S1313a'' AND AGAZAT = '''|| v_agazat(a) ||''') / ((SELECT a.'|| v_out_eszkcsp(c) ||' FROM PKD.'|| v_out_table ||' a WHERE a.EV = '''|| v_in_year(b) ||''' AND a.F_V_99 = ''F'' AND a.CFC_NET_GRS = ''cfc'' AND a.ALSZEKTOR = ''S1313'' AND a.AGAZAT = ''SUM'') / (SELECT b.'|| v_out_eszkcsp(c) ||' FROM PKD.'|| v_out_table ||' b WHERE b.EV = '''|| v_in_year(b) ||''' AND b.F_V_99 = ''V'' AND b.CFC_NET_GRS = ''cfc'' AND b.ALSZEKTOR = ''S1313'' AND b.AGAZAT = ''SUM'')))
+                                 (SELECT ROUND((SELECT '|| v_out_eszkcsp(c) ||' FROM PKD19.'|| v_out_table ||' WHERE AGAZAT = '''|| v_agazat(a) ||''' AND ALSZEKTOR = ''S1313a'' AND CFC_NET_GRS = ''cfc'' AND EV = '''|| v_in_year(b) ||''' AND F_V_99 = ''F'') / ((SELECT a.'|| v_out_eszkcsp(c) ||' FROM PKD19.'|| v_out_table ||' a WHERE a.AGAZAT = ''SUM'' AND a.ALSZEKTOR = ''S1313'' AND a.CFC_NET_GRS = ''cfc'' AND a.EV = '''|| v_in_year(b) ||''' AND a.F_V_99 = ''F'') / (SELECT b.'|| v_out_eszkcsp(c) ||' FROM PKD19.'|| v_out_table ||' b WHERE b.AGAZAT = ''SUM'' AND b.ALSZEKTOR = ''S1313'' AND b.CFC_NET_GRS = ''cfc'' AND b.EV = '''|| v_in_year(b) ||''' AND b.F_V_99 = ''V'')))
                                  FROM dual)
-                                 WHERE AGAZAT = '''|| v_agazat(a) ||''' AND F_V_99 = ''V'' AND CFC_NET_GRS = ''cfc'' AND ALSZEKTOR = ''S1313a'' AND EV = '''|| v_in_year(b) ||'''
+                                 WHERE AGAZAT = '''|| v_agazat(a) ||''' AND ALSZEKTOR = ''S1313a'' AND CFC_NET_GRS = ''cfc'' AND EV = '''|| v_in_year(b) ||''' AND F_V_99 = ''V'' 
                                  '
                                  ;
 
@@ -2260,14 +2259,14 @@ FOR s IN v_szektorok.FIRST..v_szektorok.LAST LOOP
 
                 IF ''|| v_szektorok(s) ||'' IN ('S1311a', 'S1313a') THEN
 
-                sql_statement := 'SELECT COUNT(*) FROM PKD.'|| v_out_table ||' WHERE ALSZEKTOR = '''|| v_szektorok(s) ||''' ';
+                sql_statement := 'SELECT COUNT(*) FROM PKD19.'|| v_out_table ||' WHERE ALSZEKTOR = '''|| v_szektorok(s) ||''' ';
                 EXECUTE IMMEDIATE sql_statement INTO v;
                 IF v > 0 THEN
 
                 EXECUTE IMMEDIATE
                 'DECLARE
                                CURSOR INS_OPS IS SELECT ALSZEKTOR, AGAZAT, CFC_NET_GRS, F_V_99, EV, ROUND((NVL('|| v_out_eszkcsp(1) ||', 0) + NVL('|| v_out_eszkcsp(2) ||', 0) + NVL('|| v_out_eszkcsp(3) ||', 0) + NVL('|| v_out_eszkcsp(4) ||', 0) + NVL('|| v_out_eszkcsp(5) ||', 0))) as SUM_CLASSIC
-                               FROM PKD.'|| v_out_table ||' WHERE ALSZEKTOR = '''|| v_szektorok(s) ||''' AND F_V_99 = ''V'' AND CFC_NET_GRS = ''cfc'';
+                               FROM PKD19.'|| v_out_table ||' WHERE ALSZEKTOR = '''|| v_szektorok(s) ||''' AND F_V_99 = ''V'' AND CFC_NET_GRS = ''cfc'';
                                TYPE INS_ARRAY IS TABLE OF INS_OPS%ROWTYPE;
                                INS_OPS_ARRAY INS_ARRAY;
                   BEGIN
@@ -2275,7 +2274,7 @@ FOR s IN v_szektorok.FIRST..v_szektorok.LAST LOOP
                 LOOP
                   FETCH INS_OPS BULK COLLECT INTO INS_OPS_ARRAY;
                   FORALL I IN INS_OPS_ARRAY.FIRST..INS_OPS_ARRAY.LAST
-                UPDATE PKD.'|| v_out_table ||' 
+                UPDATE PKD19.'|| v_out_table ||' 
                 SET SUM_CLASSIC = INS_OPS_ARRAY(I).SUM_CLASSIC
                 WHERE EV = INS_OPS_ARRAY(I).EV AND AGAZAT = INS_OPS_ARRAY(I).AGAZAT AND ALSZEKTOR = '''|| v_szektorok(s) ||''' AND CFC_NET_GRS = INS_OPS_ARRAY(I).CFC_NET_GRS AND F_V_99 = INS_OPS_ARRAY(I).F_V_99;
 
@@ -2304,12 +2303,12 @@ FOR x IN v_out_cfc.FIRST..v_out_cfc.LAST LOOP
 FOR y IN F_V_99.FIRST..F_V_99.LAST LOOP
 
 EXECUTE IMMEDIATE'
-UPDATE PKD.'|| v_out_table ||'
+UPDATE PKD19.'|| v_out_table ||'
 SET '|| v_out_eszkcsp(c) ||' = 
 (SELECT SUM(NVL('|| v_out_eszkcsp(c) ||', 0))
-FROM PKD.'|| v_out_table ||'
-WHERE EV = '''|| v_in_year(b) ||''' AND ALSZEKTOR = '''|| v_szektorok(s) ||''' AND CFC_NET_GRS = '''|| v_out_cfc(x) ||''' AND F_V_99 = '''|| F_V_99(y) ||'''  AND AGAZAT != ''SUM'')
-WHERE AGAZAT = ''SUM'' AND EV = '''|| v_in_year(b) ||''' AND ALSZEKTOR = '''|| v_szektorok(s) ||''' AND CFC_NET_GRS = '''|| v_out_cfc(x) ||''' AND F_V_99 = '''|| F_V_99(y) ||'''
+FROM PKD19.'|| v_out_table ||'
+WHERE AGAZAT != ''SUM'' AND ALSZEKTOR = '''|| v_szektorok(s) ||''' AND CFC_NET_GRS = '''|| v_out_cfc(x) ||''' AND EV = '''|| v_in_year(b) ||''' AND F_V_99 = '''|| F_V_99(y) ||''')
+WHERE AGAZAT = ''SUM'' AND ALSZEKTOR = '''|| v_szektorok(s) ||''' AND CFC_NET_GRS = '''|| v_out_cfc(x) ||''' AND EV = '''|| v_in_year(b) ||''' AND F_V_99 = '''|| F_V_99(y) ||'''
 '
 ;
 
@@ -2334,7 +2333,7 @@ END LOOP;
 
 
 -- SUM_CLASSIC kiszámítása a SUM rekordra
-tev_phad_sql_text := 'SELECT rowid sorid, EPULET, GYORSGEP, TARTOSGEP, JARMU, SZOFTVER FROM PKD.'|| v_out_table ||' WHERE AGAZAT = ''SUM'' ';
+tev_phad_sql_text := 'SELECT rowid sorid, EPULET, GYORSGEP, TARTOSGEP, JARMU, SZOFTVER FROM PKD19.'|| v_out_table ||' WHERE AGAZAT = ''SUM'' ';
 
 open ysum_cur for tev_phad_sql_text;
 
@@ -2345,7 +2344,7 @@ open ysum_cur for tev_phad_sql_text;
             begin
 
                 execute immediate '
-                                                               UPDATE PKD.'|| v_out_table ||' 
+                                                               UPDATE PKD19.'|| v_out_table ||' 
                 set
                 SUM_CLASSIC = :sum_all
                                                                WHERE rowid=:sorid
@@ -2368,7 +2367,7 @@ dbms_output.put_line('11. lépés STOP: ' || systimestamp);
 
 dbms_output.put_line('12. lépés START: ' || systimestamp);
 
-tev_phad_sql_text := 'SELECT rowid sorid, EPULET, GYORSGEP, TARTOSGEP, JARMU, SZOFTVER, ORIGINALS, FOLDJAVITAS, K_F, FEGYVER, OWNSOFT, LAKAS, MEZO, NOE6, KISERTEKU, WIZZ, TCF, EGYEB_ORIG FROM PKD.'|| v_out_table ||' ';
+tev_phad_sql_text := 'SELECT rowid sorid, EPULET, GYORSGEP, TARTOSGEP, JARMU, SZOFTVER, ORIGINALS, FOLDJAVITAS, K_F, FEGYVER, OWNSOFT, LAKAS, MEZO, NOE6, KISERTEKU, WIZZ, TCF, EGYEB_ORIG FROM PKD19.'|| v_out_table ||' ';
 
 open tev_phad_cur for tev_phad_sql_text;
 
@@ -2379,7 +2378,7 @@ open tev_phad_cur for tev_phad_sql_text;
             begin
 
                 execute immediate '
-                                                               UPDATE PKD.'|| v_out_table ||' 
+                                                               UPDATE PKD19.'|| v_out_table ||' 
                 set
                 SUM_ALL = :sum_all
                                                                WHERE rowid=:sorid
@@ -2399,21 +2398,21 @@ dbms_output.put_line('12. lépés STOP: ' || systimestamp);
 
 
 EXECUTE IMMEDIATE'
-DELETE FROM PKD.'|| v_out_table ||' 
+DELETE FROM PKD19.'|| v_out_table ||' 
 WHERE AGAZAT IN (''361'', ''362'', ''421'', ''422'', ''711'', ''712'', ''721'', ''722'', ''723'', ''821'', ''822'', ''841'', ''842'', ''843'', ''844'', ''845'', ''846'', ''851'', ''852'', ''853'')
 '
 ;
 
 -- SZEKTOR mező feltölése
 EXECUTE IMMEDIATE'
-UPDATE PKD.'|| v_out_table ||'
+UPDATE PKD19.'|| v_out_table ||'
 SET SZEKTOR = ALSZEKTOR 
 WHERE ALSZEKTOR NOT LIKE ''S13%''
 '
 ;
 
 EXECUTE IMMEDIATE'
-UPDATE PKD.'|| v_out_table ||'
+UPDATE PKD19.'|| v_out_table ||'
 SET SZEKTOR = ''S13'' 
 WHERE ALSZEKTOR LIKE ''S13%''
 '
@@ -2423,8 +2422,8 @@ COMMIT;
 
 --módosított tábla létrehozása
 EXECUTE IMMEDIATE'
-INSERT INTO PKD.'|| v_out_table_mod ||'
-(SELECT * FROM PKD.'|| v_out_table ||')
+INSERT INTO PKD19.'|| v_out_table_mod ||'
+(SELECT * FROM PKD19.'|| v_out_table ||')
 '
 ;
 
@@ -2476,30 +2475,30 @@ FOR x IN 2..v_out_cfc.LAST LOOP -- CFC nem kell
 FOR y IN F_V_99.FIRST..F_V_99.LAST LOOP
 
 EXECUTE IMMEDIATE'
-UPDATE PKD.'|| v_out_table_mod ||'
+UPDATE PKD19.'|| v_out_table_mod ||'
 SET '|| v_update_eszkcsp(c) ||' = 
 (SELECT SUM(NVL('|| v_update_eszkcsp(c) ||', 0))
-FROM PKD.'|| v_out_table_mod ||'
+FROM PKD19.'|| v_out_table_mod ||'
 WHERE EV = '''|| v_in_year(b) ||''' AND ALSZEKTOR = '''|| v_szektorok(s) ||''' AND CFC_NET_GRS = '''|| v_out_cfc(x) ||''' AND F_V_99 = '''|| F_V_99(y) ||'''  AND AGAZAT != ''SUM'')
 WHERE AGAZAT = ''SUM'' AND EV = '''|| v_in_year(b) ||''' AND ALSZEKTOR = '''|| v_szektorok(s) ||''' AND CFC_NET_GRS = '''|| v_out_cfc(x) ||''' AND F_V_99 = '''|| F_V_99(y) ||'''
 '
 ;
 
 EXECUTE IMMEDIATE'
-UPDATE PKD.'|| v_out_table_mod ||'
+UPDATE PKD19.'|| v_out_table_mod ||'
 SET SUM_CLASSIC = 
 (SELECT SUM(NVL(SUM_CLASSIC, 0))
-FROM PKD.'|| v_out_table_mod ||'
+FROM PKD19.'|| v_out_table_mod ||'
 WHERE EV = '''|| v_in_year(b) ||''' AND ALSZEKTOR = '''|| v_szektorok(s) ||''' AND CFC_NET_GRS = '''|| v_out_cfc(x) ||''' AND F_V_99 = '''|| F_V_99(y) ||'''  AND AGAZAT != ''SUM'')
 WHERE AGAZAT = ''SUM'' AND EV = '''|| v_in_year(b) ||''' AND ALSZEKTOR = '''|| v_szektorok(s) ||''' AND CFC_NET_GRS = '''|| v_out_cfc(x) ||''' AND F_V_99 = '''|| F_V_99(y) ||'''
 '
 ;
 
 EXECUTE IMMEDIATE'
-UPDATE PKD.'|| v_out_table_mod ||'
+UPDATE PKD19.'|| v_out_table_mod ||'
 SET SUM_ALL = 
 (SELECT SUM(NVL(SUM_ALL, 0))
-FROM PKD.'|| v_out_table_mod ||'
+FROM PKD19.'|| v_out_table_mod ||'
 WHERE EV = '''|| v_in_year(b) ||''' AND ALSZEKTOR = '''|| v_szektorok(s) ||''' AND CFC_NET_GRS = '''|| v_out_cfc(x) ||''' AND F_V_99 = '''|| F_V_99(y) ||'''  AND AGAZAT != ''SUM'')
 WHERE AGAZAT = ''SUM'' AND EV = '''|| v_in_year(b) ||''' AND ALSZEKTOR = '''|| v_szektorok(s) ||''' AND CFC_NET_GRS = '''|| v_out_cfc(x) ||''' AND F_V_99 = '''|| F_V_99(y) ||'''
 '
@@ -2537,9 +2536,9 @@ F_V_99(1) := 'F';
 F_V_99(2) := 'V';
 F_V_99(3) := '99';
 
-F_V_99a(1) := 'YSUM_AKT';
-F_V_99a(2) := 'YSUM_UNCH';
-F_V_99a(3) := 'YSUM';
+F_V_99a(1) := 'YSUM_F';
+F_V_99a(2) := 'YSUM_V';
+F_V_99a(3) := 'YSUM_99';
 
 v_out_cfc(1) := 'cfc'; 
 v_out_cfc(2) := 'net';

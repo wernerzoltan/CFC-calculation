@@ -58,7 +58,7 @@ END;
 
 create or replace PACKAGE BODY CFC_RATE AS 
 v_ar_list t_ar_list; 
-v_out_schema VARCHAR2(10) := 'PKD'; -- PKD séma -- mindenhova kell 
+v_out_schema VARCHAR2(10) := 'PKD19'; -- PKD séma -- mindenhova kell 
 
 
 procedure rate_calculator(SZEKTOR VARCHAR2, ALSZEKTOR VARCHAR2, T03_TABLE_NAME VARCHAR2, T08_TABLE_NAME VARCHAR2, T03_TABLE_NAME_LT VARCHAR2, 
@@ -113,7 +113,7 @@ SELECT COUNT(*) INTO v FROM user_tab_cols WHERE table_name = ''|| T08_TABLE_NAME
 		IF v=0 THEN
 			
 				EXECUTE IMMEDIATE'
-				CREATE TABLE PKD.'|| T08_TABLE_NAME ||'
+				CREATE TABLE PKD19.'|| T08_TABLE_NAME ||'
 				   (	"SZEKTOR" VARCHAR2(26 BYTE), 
 					"ALSZEKTOR" VARCHAR2(26 BYTE),  "ESZKOZCSP" VARCHAR2(26 BYTE), "AGAZAT" VARCHAR2(5 BYTE), 
 					"EGYEB" VARCHAR2(26 BYTE), "Y1780" NUMBER(18,11), "Y1781" NUMBER(19,12), "Y1782" NUMBER(18,11), "Y1783" NUMBER(18,11), 
@@ -361,7 +361,7 @@ SELECT COUNT(*) INTO v FROM user_tab_cols WHERE table_name = ''|| T08_TABLE_NAME
 		IF z=0 THEN
 			
 				EXECUTE IMMEDIATE'
-				CREATE TABLE PKD.'|| T08_TABLE_NAME_LT ||'
+				CREATE TABLE PKD19.'|| T08_TABLE_NAME_LT ||'
 				   (	"SZEKTOR" VARCHAR2(26 BYTE), 
 					"ALSZEKTOR" VARCHAR2(26 BYTE), "ESZKOZCSP" VARCHAR2(26 BYTE), "AGAZAT" VARCHAR2(5 BYTE), 
 					"EGYEB" VARCHAR2(26 BYTE), "Y1780" NUMBER(18,11), "Y1781" NUMBER(19,12), "Y1782" NUMBER(18,11), "Y1783" NUMBER(18,11), 
@@ -609,7 +609,7 @@ SELECT COUNT(*) INTO v FROM user_tab_cols WHERE table_name = ''|| T08_TABLE_NAME
 		IF z=0 THEN
 			
 				EXECUTE IMMEDIATE'
-				CREATE TABLE PKD.'|| T08_TABLE_NAME_AR ||'
+				CREATE TABLE PKD19.'|| T08_TABLE_NAME_AR ||'
 				   (	"SZEKTOR" VARCHAR2(26 BYTE), 
 					"ALSZEKTOR" VARCHAR2(26 BYTE), "ESZKOZCSP" VARCHAR2(26 BYTE), "AGAZAT" VARCHAR2(5 BYTE), 
 					"EGYEB" VARCHAR2(26 BYTE), 
@@ -647,28 +647,28 @@ SELECT COUNT(*) INTO v FROM user_tab_cols WHERE table_name = ''|| T08_TABLE_NAME
 
 	IF ''|| ALSZEKTOR ||'' = 'S1311' THEN -- kormányzatnál 1 kivétel van
 
-		sql_statement := 'SELECT * FROM PKD.'|| rate_calc ||' WHERE SZEKTOR = '''|| SZEKTOR ||''' AND ALSZEKTOR = '''|| ALSZEKTOR ||''' AND T08 != NVL('|| T08_1 ||', 0) '; 
+		sql_statement := 'SELECT * FROM PKD19.'|| rate_calc ||' WHERE SZEKTOR = '''|| SZEKTOR ||''' AND ALSZEKTOR = '''|| ALSZEKTOR ||''' AND T08 != NVL('|| T08_1 ||', 0) '; 
 
 	ELSIF ''|| ALSZEKTOR ||'' = 'S1313' THEN -- önkormányzatnál 2 kivétel van
 
-		sql_statement := 'SELECT * FROM PKD.'|| rate_calc ||' WHERE SZEKTOR = '''|| SZEKTOR ||''' AND ALSZEKTOR = '''|| ALSZEKTOR ||''' AND T08 != NVL('|| T08_1 ||', 0) 
+		sql_statement := 'SELECT * FROM PKD19.'|| rate_calc ||' WHERE SZEKTOR = '''|| SZEKTOR ||''' AND ALSZEKTOR = '''|| ALSZEKTOR ||''' AND T08 != NVL('|| T08_1 ||', 0) 
 		AND T08 != NVL('|| T08_2 ||', 0) '; 
 		
 	ELSIF ''|| ALSZEKTOR ||'' = 'S11' THEN -- S11-nél 2 kivétel van (26 és 32)
 	
-		sql_statement := 'SELECT * FROM PKD.'|| rate_calc ||' WHERE SZEKTOR = '''|| SZEKTOR ||''' AND ALSZEKTOR = '''|| ALSZEKTOR ||''' AND T08 != NVL('|| T08_1 ||', 0) 
+		sql_statement := 'SELECT * FROM PKD19.'|| rate_calc ||' WHERE SZEKTOR = '''|| SZEKTOR ||''' AND ALSZEKTOR = '''|| ALSZEKTOR ||''' AND T08 != NVL('|| T08_1 ||', 0) 
 		AND T08 != NVL('|| T08_2 ||', 0)  AND ARANYSZAM = ''1'' '; 	
 		
 
 	ELSE 
 	
-		sql_statement := 'SELECT * FROM PKD.'|| rate_calc ||' WHERE SZEKTOR = '''|| SZEKTOR ||''' AND ALSZEKTOR = '''|| ALSZEKTOR ||''' AND ARANYSZAM = ''1'' '; 		
+		sql_statement := 'SELECT * FROM PKD19.'|| rate_calc ||' WHERE SZEKTOR = '''|| SZEKTOR ||''' AND ALSZEKTOR = '''|| ALSZEKTOR ||''' AND ARANYSZAM = ''1'' '; 		
 		
 	END IF;
 		
 	EXECUTE IMMEDIATE sql_statement BULK COLLECT INTO v_rate;
 
-	sql_statement := 'SELECT DISTINCT ESZKOZCSP FROM PKD.'|| T03_TABLE_NAME ||' WHERE ALSZEKTOR = '''|| ALSZEKTOR ||''' ';
+	sql_statement := 'SELECT DISTINCT ESZKOZCSP FROM PKD19.'|| T03_TABLE_NAME ||' WHERE ALSZEKTOR = '''|| ALSZEKTOR ||''' ';
 	EXECUTE IMMEDIATE sql_statement  BULK COLLECT INTO v_eszkozcsp;
 	
 
@@ -679,7 +679,7 @@ SELECT COUNT(*) INTO v FROM user_tab_cols WHERE table_name = ''|| T08_TABLE_NAME
 		FOR c IN v_rate.FIRST..v_rate.LAST LOOP	
 		
 			EXECUTE IMMEDIATE'
-			INSERT INTO PKD.'|| T08_TABLE_NAME ||' (SZEKTOR, ALSZEKTOR, AGAZAT, ESZKOZCSP) VALUES 
+			INSERT INTO PKD19.'|| T08_TABLE_NAME ||' (SZEKTOR, ALSZEKTOR, AGAZAT, ESZKOZCSP) VALUES 
 			('''|| v_rate(c).SZEKTOR ||''', '''|| v_rate(c).ALSZEKTOR ||''', '|| v_rate(c).T08 ||', '''|| v_eszkozcsp(a) ||''')
 			'
 			;
@@ -702,8 +702,8 @@ l_idx := l_cell.FIRST;
 			FOR d IN l_cell.FIRST..l_cell.LAST LOOP
 										
 				EXECUTE IMMEDIATE'
-				UPDATE PKD.'|| T08_TABLE_NAME ||' b SET Y'|| l_cell(d) ||'  =
-				(SELECT Y'|| l_cell(d) ||'  FROM PKD.'|| T03_TABLE_NAME ||' a
+				UPDATE PKD19.'|| T08_TABLE_NAME ||' b SET Y'|| l_cell(d) ||'  =
+				(SELECT Y'|| l_cell(d) ||'  FROM PKD19.'|| T03_TABLE_NAME ||' a
 				WHERE a.AGAZAT = '|| v_rate(c).T03 ||' AND a.ALSZEKTOR = '''|| ALSZEKTOR ||''' AND ESZKOZCSP = '''|| v_eszkozcsp(a) ||''')
 				WHERE AGAZAT = '|| v_rate(c).T08 ||' AND ALSZEKTOR = '''|| ALSZEKTOR ||''' AND ESZKOZCSP = '''|| v_eszkozcsp(a) ||'''
 				'
@@ -721,7 +721,7 @@ l_idx := l_cell.FIRST;
 
 -- 2. lépés: ahol az arányszám 0, azokat egy listába tesszük
 
-	sql_statement := 'SELECT * FROM PKD.'|| rate_calc ||' WHERE SZEKTOR = '''|| SZEKTOR ||''' AND ALSZEKTOR = '''|| ALSZEKTOR ||''' AND ARANYSZAM = ''0'' '; 
+	sql_statement := 'SELECT * FROM PKD19.'|| rate_calc ||' WHERE SZEKTOR = '''|| SZEKTOR ||''' AND ALSZEKTOR = '''|| ALSZEKTOR ||''' AND ARANYSZAM = ''0'' '; 
 
 	EXECUTE IMMEDIATE sql_statement BULK COLLECT INTO v_rate_0;
 
@@ -735,7 +735,7 @@ IF v_rate_0(1).T08 = '0' THEN
 		FOR c IN v_rate_0.FIRST..v_rate_0.LAST LOOP	
 			
 			EXECUTE IMMEDIATE'
-			INSERT INTO PKD.'|| T08_TABLE_NAME ||' (SZEKTOR, ALSZEKTOR, AGAZAT, ESZKOZCSP) VALUES 
+			INSERT INTO PKD19.'|| T08_TABLE_NAME ||' (SZEKTOR, ALSZEKTOR, AGAZAT, ESZKOZCSP) VALUES 
 			('''|| v_rate_0(c).SZEKTOR ||''', '''|| v_rate_0(c).ALSZEKTOR ||''', '|| v_rate_0(c).T08 ||', '''|| v_eszkozcsp(a) ||''')
 			'
 			;
@@ -758,7 +758,7 @@ l_idx := l_cell.FIRST;
 			FOR d IN l_cell.FIRST..l_cell.LAST LOOP
 			
 				EXECUTE IMMEDIATE'
-				UPDATE PKD.'|| T08_TABLE_NAME ||' b SET Y'|| l_cell(d) ||'  =
+				UPDATE PKD19.'|| T08_TABLE_NAME ||' b SET Y'|| l_cell(d) ||'  =
 				''0''
 				WHERE AGAZAT = '|| v_rate_0(c).T08 ||' AND ALSZEKTOR = '''|| ALSZEKTOR ||''' AND ESZKOZCSP = '''|| v_eszkozcsp(a) ||'''
 				'
@@ -777,7 +777,7 @@ END IF;
 
 -- 3. lépés: ahol az arányszám 0 és 1 közötti, azokat egy listába tesszük
 
-	sql_statement := 'SELECT COUNT(*) FROM PKD.'|| rate_calc ||' WHERE SZEKTOR = '''|| SZEKTOR ||''' AND ALSZEKTOR = '''|| ALSZEKTOR ||''' AND ARANYSZAM NOT IN (''0'', ''1'')';	
+	sql_statement := 'SELECT COUNT(*) FROM PKD19.'|| rate_calc ||' WHERE SZEKTOR = '''|| SZEKTOR ||''' AND ALSZEKTOR = '''|| ALSZEKTOR ||''' AND ARANYSZAM NOT IN (''0'', ''1'')';	
 	
 	EXECUTE IMMEDIATE sql_statement INTO v;
 	
@@ -785,12 +785,12 @@ END IF;
 	
 	IF ALSZEKTOR = 'S11' THEN
 	
-	sql_statement := 'SELECT * FROM PKD.'|| rate_calc ||' WHERE SZEKTOR = '''|| SZEKTOR ||''' AND ALSZEKTOR = '''|| ALSZEKTOR ||''' 
+	sql_statement := 'SELECT * FROM PKD19.'|| rate_calc ||' WHERE SZEKTOR = '''|| SZEKTOR ||''' AND ALSZEKTOR = '''|| ALSZEKTOR ||''' 
 	AND ARANYSZAM NOT IN (''0'', ''1'') AND T08 != NVL('|| T08_1 ||', 0) AND T08 != NVL('|| T08_2 ||', 0) '; 
 		
 	ELSE 
 	
-	sql_statement := 'SELECT * FROM PKD.'|| rate_calc ||' WHERE SZEKTOR = '''|| SZEKTOR ||''' AND ALSZEKTOR = '''|| ALSZEKTOR ||''' 
+	sql_statement := 'SELECT * FROM PKD19.'|| rate_calc ||' WHERE SZEKTOR = '''|| SZEKTOR ||''' AND ALSZEKTOR = '''|| ALSZEKTOR ||''' 
 	AND ARANYSZAM NOT IN (''0'', ''1'')';
 	
 	END IF;
@@ -805,7 +805,7 @@ END IF;
 		FOR c IN v_rate_d.FIRST..v_rate_d.LAST LOOP	
 			
 			EXECUTE IMMEDIATE'
-			INSERT INTO PKD.'|| T08_TABLE_NAME ||' (SZEKTOR, ALSZEKTOR, AGAZAT, ESZKOZCSP) VALUES 
+			INSERT INTO PKD19.'|| T08_TABLE_NAME ||' (SZEKTOR, ALSZEKTOR, AGAZAT, ESZKOZCSP) VALUES 
 			('''|| v_rate_d(c).SZEKTOR ||''', '''|| v_rate_d(c).ALSZEKTOR ||''', '|| v_rate_d(c).T08 ||', '''|| v_eszkozcsp(a) ||''')
 			'
 			;
@@ -829,9 +829,9 @@ l_idx := l_cell.FIRST;
 			FOR d IN l_cell.FIRST..l_cell.LAST LOOP
 			
 				EXECUTE IMMEDIATE'
-				UPDATE PKD.'|| T08_TABLE_NAME ||' b SET Y'|| l_cell(d) ||'  =
+				UPDATE PKD19.'|| T08_TABLE_NAME ||' b SET Y'|| l_cell(d) ||'  =
 				(SELECT a.Y'|| l_cell(d) ||' * b.ARANYSZAM
-				FROM PKD.'|| T03_TABLE_NAME ||' a, PKD.'|| RATE_CALC ||' b
+				FROM PKD19.'|| T03_TABLE_NAME ||' a, PKD19.'|| RATE_CALC ||' b
 				WHERE a.AGAZAT = '|| v_rate_d(c).T03 ||' AND b.T08 = '|| v_rate_d(c).T08 ||' AND a.ALSZEKTOR = '''|| ALSZEKTOR ||'''  AND b.ALSZEKTOR = '''|| ALSZEKTOR ||''' 
 				AND ESZKOZCSP = '''|| v_eszkozcsp(a) ||''')
 				WHERE AGAZAT = '|| v_rate_d(c).T08 ||' AND ALSZEKTOR = '''|| ALSZEKTOR ||''' AND ESZKOZCSP = '''|| v_eszkozcsp(a) ||'''
@@ -856,7 +856,7 @@ IF ''|| T08_1 ||'' IS NOT NULL THEN
 	FOR a IN v_eszkozcsp.FIRST..v_eszkozcsp.LAST LOOP	
 	
 		EXECUTE IMMEDIATE'
-		INSERT INTO PKD.'|| T08_TABLE_NAME ||' (SZEKTOR, ALSZEKTOR, AGAZAT, ESZKOZCSP) 
+		INSERT INTO PKD19.'|| T08_TABLE_NAME ||' (SZEKTOR, ALSZEKTOR, AGAZAT, ESZKOZCSP) 
 		VALUES ('''|| SZEKTOR ||''', '''|| ALSZEKTOR ||''', '''|| T08_1 ||''', '''|| v_eszkozcsp(a) ||''')';
 		
 	END LOOP;
@@ -874,10 +874,10 @@ l_idx := l_cell.FIRST;
 		FOR d IN l_cell.FIRST..l_cell.LAST LOOP
 			
 			EXECUTE IMMEDIATE'
-			UPDATE PKD.'|| T08_TABLE_NAME ||' b SET Y'|| l_cell(d) ||'  =
+			UPDATE PKD19.'|| T08_TABLE_NAME ||' b SET Y'|| l_cell(d) ||'  =
 			(SELECT SUM(NVL(a.Y'|| l_cell(d) ||', 0))
-			FROM PKD.'|| T03_TABLE_NAME ||' a
-			WHERE a.AGAZAT IN (SELECT T03 FROM PKD.'|| rate_calc ||' WHERE ALSZEKTOR = '''|| ALSZEKTOR ||''' AND T08 = '''|| T08_1 ||''') 
+			FROM PKD19.'|| T03_TABLE_NAME ||' a
+			WHERE a.AGAZAT IN (SELECT T03 FROM PKD19.'|| rate_calc ||' WHERE ALSZEKTOR = '''|| ALSZEKTOR ||''' AND T08 = '''|| T08_1 ||''') 
 			AND a.ALSZEKTOR = '''|| ALSZEKTOR ||''' 
 			AND a.ESZKOZCSP = '''|| v_eszkozcsp(a) ||''')
 			WHERE AGAZAT = '''|| T08_1 ||''' 
@@ -901,7 +901,7 @@ IF ''|| T08_2 ||'' IS NOT NULL THEN -- a kivételek, azaz amelyeket össze kell 
 	FOR a IN v_eszkozcsp.FIRST..v_eszkozcsp.LAST LOOP	
 
 		EXECUTE IMMEDIATE'
-		INSERT INTO PKD.'|| T08_TABLE_NAME ||' (SZEKTOR, ALSZEKTOR, AGAZAT, ESZKOZCSP) 
+		INSERT INTO PKD19.'|| T08_TABLE_NAME ||' (SZEKTOR, ALSZEKTOR, AGAZAT, ESZKOZCSP) 
 		VALUES ('''|| SZEKTOR ||''', '''|| ALSZEKTOR ||''', '''|| T08_2 ||''', '''|| v_eszkozcsp(a) ||''')';
 		
 	END LOOP;
@@ -919,10 +919,10 @@ l_idx := l_cell.FIRST;
 		FOR d IN l_cell.FIRST..l_cell.LAST LOOP
 			
 			EXECUTE IMMEDIATE'
-			UPDATE PKD.'|| T08_TABLE_NAME ||' b SET Y'|| l_cell(d) ||'  =
+			UPDATE PKD19.'|| T08_TABLE_NAME ||' b SET Y'|| l_cell(d) ||'  =
 			(SELECT SUM(NVL(a.Y'|| l_cell(d) ||', 0))
-			FROM PKD.'|| T03_TABLE_NAME ||' a
-			WHERE a.AGAZAT IN (SELECT T03 FROM PKD.'|| rate_calc ||' WHERE ALSZEKTOR = '''|| ALSZEKTOR ||''' AND T08 = '''|| T08_2 ||''') 
+			FROM PKD19.'|| T03_TABLE_NAME ||' a
+			WHERE a.AGAZAT IN (SELECT T03 FROM PKD19.'|| rate_calc ||' WHERE ALSZEKTOR = '''|| ALSZEKTOR ||''' AND T08 = '''|| T08_2 ||''') 
 			AND a.ALSZEKTOR = '''|| ALSZEKTOR ||''' 
 			AND a.ESZKOZCSP = '''|| v_eszkozcsp(a) ||''')
 			WHERE AGAZAT = '''|| T08_2 ||''' 
@@ -942,23 +942,23 @@ END IF;
 	
 -- 5. lépés: a 01 és 09 közöttieket 0-val kezdődőre kell állítani	
 	EXECUTE IMMEDIATE'
-	UPDATE PKD.'|| T08_TABLE_NAME ||' SET AGAZAT = ''01'' WHERE AGAZAT = ''1'' ';
+	UPDATE PKD19.'|| T08_TABLE_NAME ||' SET AGAZAT = ''01'' WHERE AGAZAT = ''1'' ';
 	EXECUTE IMMEDIATE'
-	UPDATE PKD.'|| T08_TABLE_NAME ||' SET AGAZAT = ''02'' WHERE AGAZAT = ''2'' ';
+	UPDATE PKD19.'|| T08_TABLE_NAME ||' SET AGAZAT = ''02'' WHERE AGAZAT = ''2'' ';
 	EXECUTE IMMEDIATE'
-	UPDATE PKD.'|| T08_TABLE_NAME ||' SET AGAZAT = ''03'' WHERE AGAZAT = ''3'' ';
+	UPDATE PKD19.'|| T08_TABLE_NAME ||' SET AGAZAT = ''03'' WHERE AGAZAT = ''3'' ';
 	EXECUTE IMMEDIATE'
-	UPDATE PKD.'|| T08_TABLE_NAME ||' SET AGAZAT = ''04'' WHERE AGAZAT = ''4'' ';
+	UPDATE PKD19.'|| T08_TABLE_NAME ||' SET AGAZAT = ''04'' WHERE AGAZAT = ''4'' ';
 	EXECUTE IMMEDIATE'
-	UPDATE PKD.'|| T08_TABLE_NAME ||' SET AGAZAT = ''05'' WHERE AGAZAT = ''5'' ';
+	UPDATE PKD19.'|| T08_TABLE_NAME ||' SET AGAZAT = ''05'' WHERE AGAZAT = ''5'' ';
 	EXECUTE IMMEDIATE'
-	UPDATE PKD.'|| T08_TABLE_NAME ||' SET AGAZAT = ''06'' WHERE AGAZAT = ''6'' ';
+	UPDATE PKD19.'|| T08_TABLE_NAME ||' SET AGAZAT = ''06'' WHERE AGAZAT = ''6'' ';
 	EXECUTE IMMEDIATE'
-	UPDATE PKD.'|| T08_TABLE_NAME ||' SET AGAZAT = ''07'' WHERE AGAZAT = ''7'' ';
+	UPDATE PKD19.'|| T08_TABLE_NAME ||' SET AGAZAT = ''07'' WHERE AGAZAT = ''7'' ';
 	EXECUTE IMMEDIATE'
-	UPDATE PKD.'|| T08_TABLE_NAME ||' SET AGAZAT = ''08'' WHERE AGAZAT = ''8'' ';
+	UPDATE PKD19.'|| T08_TABLE_NAME ||' SET AGAZAT = ''08'' WHERE AGAZAT = ''8'' ';
 	EXECUTE IMMEDIATE'
-	UPDATE PKD.'|| T08_TABLE_NAME ||' SET AGAZAT = ''09'' WHERE AGAZAT = ''9'' ';
+	UPDATE PKD19.'|| T08_TABLE_NAME ||' SET AGAZAT = ''09'' WHERE AGAZAT = ''9'' ';
 	
 
 
@@ -967,21 +967,21 @@ END IF;
 
 	IF ''|| ALSZEKTOR ||'' = 'S1311' THEN -- önkormányzatnál 2 kivétel is van
 
-		sql_statement := 'SELECT * FROM PKD.'|| rate_calc ||' WHERE SZEKTOR = '''|| SZEKTOR ||''' AND ALSZEKTOR = '''|| ALSZEKTOR ||''' AND T08 != NVL('|| T08_1 ||', 0) '; 
+		sql_statement := 'SELECT * FROM PKD19.'|| rate_calc ||' WHERE SZEKTOR = '''|| SZEKTOR ||''' AND ALSZEKTOR = '''|| ALSZEKTOR ||''' AND T08 != NVL('|| T08_1 ||', 0) '; 
 
 	ELSIF ''|| ALSZEKTOR ||'' = 'S1313' THEN -- önkormányzatnál 2 kivétel is van
 
-		sql_statement := 'SELECT * FROM PKD.'|| rate_calc ||' WHERE SZEKTOR = '''|| SZEKTOR ||''' AND ALSZEKTOR = '''|| ALSZEKTOR ||''' AND T08 != NVL('|| T08_1 ||', 0) 
+		sql_statement := 'SELECT * FROM PKD19.'|| rate_calc ||' WHERE SZEKTOR = '''|| SZEKTOR ||''' AND ALSZEKTOR = '''|| ALSZEKTOR ||''' AND T08 != NVL('|| T08_1 ||', 0) 
 		AND T08 != NVL('|| T08_2 ||', 0) '; 	
 		
 	ELSIF ''|| ALSZEKTOR ||'' = 'S11' THEN -- S11-nél 2 kivétel van (26 és 32)
 	
-		sql_statement := 'SELECT * FROM PKD.'|| rate_calc ||' WHERE SZEKTOR = '''|| SZEKTOR ||''' AND ALSZEKTOR = '''|| ALSZEKTOR ||''' AND T08 != NVL('|| T08_1 ||', 0) 
+		sql_statement := 'SELECT * FROM PKD19.'|| rate_calc ||' WHERE SZEKTOR = '''|| SZEKTOR ||''' AND ALSZEKTOR = '''|| ALSZEKTOR ||''' AND T08 != NVL('|| T08_1 ||', 0) 
 		AND T08 != NVL('|| T08_2 ||', 0)  '; 	
 		
 	ELSE 
 	
-		sql_statement := 'SELECT * FROM PKD.'|| rate_calc ||' WHERE SZEKTOR = '''|| SZEKTOR ||''' AND ALSZEKTOR = '''|| ALSZEKTOR ||''' 
+		sql_statement := 'SELECT * FROM PKD19.'|| rate_calc ||' WHERE SZEKTOR = '''|| SZEKTOR ||''' AND ALSZEKTOR = '''|| ALSZEKTOR ||''' 
 		'; 		
 	
 		
@@ -989,7 +989,7 @@ END IF;
 
 	EXECUTE IMMEDIATE sql_statement BULK COLLECT INTO v_rate_d;
 	
-	sql_statement := 'SELECT DISTINCT ESZKOZCSP FROM PKD.'|| T03_TABLE_NAME_LT ||' WHERE ALSZEKTOR = '''|| ALSZEKTOR ||''' ';
+	sql_statement := 'SELECT DISTINCT ESZKOZCSP FROM PKD19.'|| T03_TABLE_NAME_LT ||' WHERE ALSZEKTOR = '''|| ALSZEKTOR ||''' ';
 	EXECUTE IMMEDIATE sql_statement  BULK COLLECT INTO v_eszkozcsp;
 
 
@@ -1000,7 +1000,7 @@ END IF;
 		FOR c IN v_rate_d.FIRST..v_rate_d.LAST LOOP	
 		
 			EXECUTE IMMEDIATE'
-			INSERT INTO PKD.'|| T08_TABLE_NAME_LT ||' (SZEKTOR, ALSZEKTOR, AGAZAT, ESZKOZCSP) VALUES 
+			INSERT INTO PKD19.'|| T08_TABLE_NAME_LT ||' (SZEKTOR, ALSZEKTOR, AGAZAT, ESZKOZCSP) VALUES 
 			('''|| v_rate_d(c).SZEKTOR ||''', '''|| v_rate_d(c).ALSZEKTOR ||''', '|| v_rate_d(c).T08 ||', '''|| v_eszkozcsp(a) ||''')
 			'
 			;
@@ -1024,9 +1024,9 @@ l_idx := l_cell.FIRST;
 			FOR d IN l_cell.FIRST..l_cell.LAST LOOP
 			
 				EXECUTE IMMEDIATE'
-				UPDATE PKD.'|| T08_TABLE_NAME_LT ||' SET Y'|| l_cell(d) ||'  =
+				UPDATE PKD19.'|| T08_TABLE_NAME_LT ||' SET Y'|| l_cell(d) ||'  =
 				(SELECT a.Y'|| l_cell(d) ||'
-				FROM PKD.'|| T03_TABLE_NAME_LT ||' a, PKD.'|| RATE_CALC ||' b
+				FROM PKD19.'|| T03_TABLE_NAME_LT ||' a, PKD19.'|| RATE_CALC ||' b
 				WHERE a.AGAZAT = '|| v_rate_d(c).T03 ||' AND b.T08 = '|| v_rate_d(c).T08 ||' AND a.ESZKOZCSP = '''|| v_eszkozcsp(a) ||''' 
 				AND a.ALSZEKTOR = '''|| ALSZEKTOR ||''' AND b.ALSZEKTOR = '''|| ALSZEKTOR ||''')
 				WHERE AGAZAT = '|| v_rate_d(c).T08 ||' AND ESZKOZCSP = '''|| v_eszkozcsp(a) ||''' AND ALSZEKTOR = '''|| ALSZEKTOR ||'''
@@ -1049,7 +1049,7 @@ IF ''|| T08_1 ||'' IS NOT NULL THEN
 	FOR a IN v_eszkozcsp.FIRST..v_eszkozcsp.LAST LOOP	
 
 		EXECUTE IMMEDIATE'
-		INSERT INTO PKD.'|| T08_TABLE_NAME_LT ||' (SZEKTOR, ALSZEKTOR, AGAZAT, ESZKOZCSP) 
+		INSERT INTO PKD19.'|| T08_TABLE_NAME_LT ||' (SZEKTOR, ALSZEKTOR, AGAZAT, ESZKOZCSP) 
 		VALUES ('''|| SZEKTOR ||''', '''|| ALSZEKTOR ||''', '''|| T08_1 ||''', '''|| v_eszkozcsp(a) ||''')';
 		
 	END LOOP;
@@ -1068,9 +1068,9 @@ l_idx := l_cell.FIRST;
 		FOR d IN l_cell.FIRST..l_cell.LAST LOOP
 			
 			EXECUTE IMMEDIATE'
-			UPDATE PKD.'|| T08_TABLE_NAME_LT ||' b SET Y'|| l_cell(d) ||'  =
+			UPDATE PKD19.'|| T08_TABLE_NAME_LT ||' b SET Y'|| l_cell(d) ||'  =
 			(SELECT a.Y'|| l_cell(d) ||'
-			FROM PKD.'|| T03_TABLE_NAME_LT ||' a
+			FROM PKD19.'|| T03_TABLE_NAME_LT ||' a
 			WHERE a.AGAZAT = '''|| LT_INPUT ||'''
 			AND a.ALSZEKTOR = '''|| ALSZEKTOR ||''' 
 			AND a.ESZKOZCSP = '''|| v_eszkozcsp(a) ||''')
@@ -1096,7 +1096,7 @@ IF ''|| T08_2 ||'' IS NOT NULL THEN
 	FOR a IN v_eszkozcsp.FIRST..v_eszkozcsp.LAST LOOP	
 
 		EXECUTE IMMEDIATE'
-		INSERT INTO PKD.'|| T08_TABLE_NAME_LT ||' (SZEKTOR, ALSZEKTOR, AGAZAT, ESZKOZCSP) 
+		INSERT INTO PKD19.'|| T08_TABLE_NAME_LT ||' (SZEKTOR, ALSZEKTOR, AGAZAT, ESZKOZCSP) 
 		VALUES ('''|| SZEKTOR ||''', '''|| ALSZEKTOR ||''', '''|| T08_2 ||''', '''|| v_eszkozcsp(a) ||''')';
 		
 	END LOOP;
@@ -1115,9 +1115,9 @@ l_idx := l_cell.FIRST;
 		FOR d IN l_cell.FIRST..l_cell.LAST LOOP
 			
 			EXECUTE IMMEDIATE'
-			UPDATE PKD.'|| T08_TABLE_NAME_LT ||' b SET Y'|| l_cell(d) ||'  =
+			UPDATE PKD19.'|| T08_TABLE_NAME_LT ||' b SET Y'|| l_cell(d) ||'  =
 			(SELECT a.Y'|| l_cell(d) ||'
-			FROM PKD.'|| T03_TABLE_NAME_LT ||' a
+			FROM PKD19.'|| T03_TABLE_NAME_LT ||' a
 			WHERE a.AGAZAT = '''|| LT_INPUT ||'''
 			AND a.ALSZEKTOR = '''|| ALSZEKTOR ||''' 
 			AND a.ESZKOZCSP = '''|| v_eszkozcsp(a) ||''')
@@ -1138,23 +1138,23 @@ END IF;
 
 	-- 3. lépés: a 01 és 09 közöttieket 0-val kezdődőre kell állítani	
 	EXECUTE IMMEDIATE'
-	UPDATE PKD.'|| T08_TABLE_NAME_LT ||' SET AGAZAT = ''01'' WHERE AGAZAT = ''1'' ';
+	UPDATE PKD19.'|| T08_TABLE_NAME_LT ||' SET AGAZAT = ''01'' WHERE AGAZAT = ''1'' ';
 	EXECUTE IMMEDIATE'
-	UPDATE PKD.'|| T08_TABLE_NAME_LT ||' SET AGAZAT = ''02'' WHERE AGAZAT = ''2'' ';
+	UPDATE PKD19.'|| T08_TABLE_NAME_LT ||' SET AGAZAT = ''02'' WHERE AGAZAT = ''2'' ';
 	EXECUTE IMMEDIATE'
-	UPDATE PKD.'|| T08_TABLE_NAME_LT ||' SET AGAZAT = ''03'' WHERE AGAZAT = ''3'' ';
+	UPDATE PKD19.'|| T08_TABLE_NAME_LT ||' SET AGAZAT = ''03'' WHERE AGAZAT = ''3'' ';
 	EXECUTE IMMEDIATE'
-	UPDATE PKD.'|| T08_TABLE_NAME_LT ||' SET AGAZAT = ''04'' WHERE AGAZAT = ''4'' ';
+	UPDATE PKD19.'|| T08_TABLE_NAME_LT ||' SET AGAZAT = ''04'' WHERE AGAZAT = ''4'' ';
 	EXECUTE IMMEDIATE'
-	UPDATE PKD.'|| T08_TABLE_NAME_LT ||' SET AGAZAT = ''05'' WHERE AGAZAT = ''5'' ';
+	UPDATE PKD19.'|| T08_TABLE_NAME_LT ||' SET AGAZAT = ''05'' WHERE AGAZAT = ''5'' ';
 	EXECUTE IMMEDIATE'
-	UPDATE PKD.'|| T08_TABLE_NAME_LT ||' SET AGAZAT = ''06'' WHERE AGAZAT = ''6'' ';
+	UPDATE PKD19.'|| T08_TABLE_NAME_LT ||' SET AGAZAT = ''06'' WHERE AGAZAT = ''6'' ';
 	EXECUTE IMMEDIATE'
-	UPDATE PKD.'|| T08_TABLE_NAME_LT ||' SET AGAZAT = ''07'' WHERE AGAZAT = ''7'' ';
+	UPDATE PKD19.'|| T08_TABLE_NAME_LT ||' SET AGAZAT = ''07'' WHERE AGAZAT = ''7'' ';
 	EXECUTE IMMEDIATE'
-	UPDATE PKD.'|| T08_TABLE_NAME_LT ||' SET AGAZAT = ''08'' WHERE AGAZAT = ''8'' ';
+	UPDATE PKD19.'|| T08_TABLE_NAME_LT ||' SET AGAZAT = ''08'' WHERE AGAZAT = ''8'' ';
 	EXECUTE IMMEDIATE'
-	UPDATE PKD.'|| T08_TABLE_NAME_LT ||' SET AGAZAT = ''09'' WHERE AGAZAT = ''9'' ';
+	UPDATE PKD19.'|| T08_TABLE_NAME_LT ||' SET AGAZAT = ''09'' WHERE AGAZAT = ''9'' ';
 	
 
 	
@@ -1163,28 +1163,28 @@ END IF;
 -- ÁRINDEX átalakító
 	IF ''|| ALSZEKTOR ||'' = 'S1311' THEN -- kormányzatnál 1 kivétel van (841)
 
-		sql_statement := 'SELECT * FROM PKD.'|| rate_calc ||' WHERE SZEKTOR = '''|| SZEKTOR ||''' AND ALSZEKTOR = '''|| ALSZEKTOR ||''' AND T08 != NVL('|| T08_1 ||', 0) '; 
+		sql_statement := 'SELECT * FROM PKD19.'|| rate_calc ||' WHERE SZEKTOR = '''|| SZEKTOR ||''' AND ALSZEKTOR = '''|| ALSZEKTOR ||''' AND T08 != NVL('|| T08_1 ||', 0) '; 
 
 	ELSIF ''|| ALSZEKTOR ||'' = 'S1313' THEN -- önkormányzatnál 2 kivétel is van (841, 81)
 
-		sql_statement := 'SELECT * FROM PKD.'|| rate_calc ||' WHERE SZEKTOR = '''|| SZEKTOR ||''' AND ALSZEKTOR = '''|| ALSZEKTOR ||''' AND T08 != NVL('|| T08_1 ||', 0) 
+		sql_statement := 'SELECT * FROM PKD19.'|| rate_calc ||' WHERE SZEKTOR = '''|| SZEKTOR ||''' AND ALSZEKTOR = '''|| ALSZEKTOR ||''' AND T08 != NVL('|| T08_1 ||', 0) 
 		AND T08 != NVL('|| T08_2 ||', 0) '; 
 
 	ELSIF ''|| ALSZEKTOR ||'' = 'S11' THEN -- S11-nél 2 kivétel van (26 és 32)
 	
-		sql_statement := 'SELECT * FROM PKD.'|| rate_calc ||' WHERE SZEKTOR = '''|| SZEKTOR ||''' AND ALSZEKTOR = '''|| ALSZEKTOR ||''' AND T08 != NVL('|| T08_1 ||', 0) 
+		sql_statement := 'SELECT * FROM PKD19.'|| rate_calc ||' WHERE SZEKTOR = '''|| SZEKTOR ||''' AND ALSZEKTOR = '''|| ALSZEKTOR ||''' AND T08 != NVL('|| T08_1 ||', 0) 
 		AND T08 != NVL('|| T08_2 ||', 0)  '; 	
 		
 	ELSE
 	
-		sql_statement := 'SELECT * FROM PKD.'|| rate_calc ||' WHERE SZEKTOR = '''|| SZEKTOR ||''' AND ALSZEKTOR = '''|| ALSZEKTOR ||''' 
+		sql_statement := 'SELECT * FROM PKD19.'|| rate_calc ||' WHERE SZEKTOR = '''|| SZEKTOR ||''' AND ALSZEKTOR = '''|| ALSZEKTOR ||''' 
 		'; 	
 		
 	END IF;
 
 	EXECUTE IMMEDIATE sql_statement BULK COLLECT INTO v_rate_d;
 	
-	sql_statement := 'SELECT DISTINCT ESZKOZCSP FROM PKD.'|| T03_TABLE_NAME_AR ||' WHERE ALSZEKTOR = '''|| ALSZEKTOR ||''' ';
+	sql_statement := 'SELECT DISTINCT ESZKOZCSP FROM PKD19.'|| T03_TABLE_NAME_AR ||' WHERE ALSZEKTOR = '''|| ALSZEKTOR ||''' ';
 	EXECUTE IMMEDIATE sql_statement  BULK COLLECT INTO v_eszkozcsp;
 
 
@@ -1195,7 +1195,7 @@ END IF;
 		FOR c IN v_rate_d.FIRST..v_rate_d.LAST LOOP	
 		
 			EXECUTE IMMEDIATE'
-			INSERT INTO PKD.'|| T08_TABLE_NAME_AR ||' (SZEKTOR, ALSZEKTOR, AGAZAT, ESZKOZCSP) VALUES 
+			INSERT INTO PKD19.'|| T08_TABLE_NAME_AR ||' (SZEKTOR, ALSZEKTOR, AGAZAT, ESZKOZCSP) VALUES 
 			('''|| v_rate_d(c).SZEKTOR ||''', '''|| v_rate_d(c).ALSZEKTOR ||''', '|| v_rate_d(c).T08 ||', '''|| v_eszkozcsp(a) ||''')
 			'
 			;
@@ -1214,9 +1214,9 @@ END IF;
 			FOR d IN v_ar_list.FIRST..v_ar_list.LAST LOOP
 			
 				EXECUTE IMMEDIATE'
-				UPDATE PKD.'|| T08_TABLE_NAME_AR ||' SET '|| v_ar_list(d) ||'  =
+				UPDATE PKD19.'|| T08_TABLE_NAME_AR ||' SET '|| v_ar_list(d) ||'  =
 				(SELECT a.'|| v_ar_list(d) ||'
-				FROM PKD.'|| T03_TABLE_NAME_AR ||' a, PKD.'|| RATE_CALC ||' b
+				FROM PKD19.'|| T03_TABLE_NAME_AR ||' a, PKD19.'|| RATE_CALC ||' b
 				WHERE a.AGAZAT = '|| v_rate_d(c).T03 ||' AND b.T08 = '|| v_rate_d(c).T08 ||' AND a.ESZKOZCSP = '''|| v_eszkozcsp(a) ||''' 
 				AND a.ALSZEKTOR = '''|| ALSZEKTOR ||''' AND b.ALSZEKTOR = '''|| ALSZEKTOR ||''')
 				WHERE AGAZAT = '|| v_rate_d(c).T08 ||' AND ESZKOZCSP = '''|| v_eszkozcsp(a) ||''' AND ALSZEKTOR = '''|| ALSZEKTOR ||'''
@@ -1237,7 +1237,7 @@ IF ''|| T08_1 ||'' IS NOT NULL THEN
 	FOR a IN v_eszkozcsp.FIRST..v_eszkozcsp.LAST LOOP	
 
 		EXECUTE IMMEDIATE'
-		INSERT INTO PKD.'|| T08_TABLE_NAME_AR ||' (SZEKTOR, ALSZEKTOR, AGAZAT, ESZKOZCSP) 
+		INSERT INTO PKD19.'|| T08_TABLE_NAME_AR ||' (SZEKTOR, ALSZEKTOR, AGAZAT, ESZKOZCSP) 
 		VALUES ('''|| SZEKTOR ||''', '''|| ALSZEKTOR ||''', '''|| T08_1 ||''', '''|| v_eszkozcsp(a) ||''')';
 		
 	END LOOP;
@@ -1250,9 +1250,9 @@ IF ''|| T08_1 ||'' IS NOT NULL THEN
 		FOR d IN v_ar_list.FIRST..v_ar_list.LAST LOOP
 			
 			EXECUTE IMMEDIATE'
-			UPDATE PKD.'|| T08_TABLE_NAME_AR ||' b SET '|| v_ar_list(d) ||'  =
+			UPDATE PKD19.'|| T08_TABLE_NAME_AR ||' b SET '|| v_ar_list(d) ||'  =
 			(SELECT a.'|| v_ar_list(d) ||'
-			FROM PKD.'|| T03_TABLE_NAME_AR ||' a
+			FROM PKD19.'|| T03_TABLE_NAME_AR ||' a
 			WHERE a.AGAZAT = '''|| LT_INPUT ||'''
 			AND a.ALSZEKTOR = '''|| ALSZEKTOR ||''' 
 			AND a.ESZKOZCSP = '''|| v_eszkozcsp(a) ||''')
@@ -1275,7 +1275,7 @@ IF ''|| T08_2 ||'' IS NOT NULL THEN -- a kivételek / 2
 	FOR a IN v_eszkozcsp.FIRST..v_eszkozcsp.LAST LOOP	
 
 		EXECUTE IMMEDIATE'
-		INSERT INTO PKD.'|| T08_TABLE_NAME_AR ||' (SZEKTOR, ALSZEKTOR, AGAZAT, ESZKOZCSP) 
+		INSERT INTO PKD19.'|| T08_TABLE_NAME_AR ||' (SZEKTOR, ALSZEKTOR, AGAZAT, ESZKOZCSP) 
 		VALUES ('''|| SZEKTOR ||''', '''|| ALSZEKTOR ||''', '''|| T08_2 ||''', '''|| v_eszkozcsp(a) ||''')';
 		
 	END LOOP;
@@ -1288,9 +1288,9 @@ IF ''|| T08_2 ||'' IS NOT NULL THEN -- a kivételek / 2
 		FOR d IN v_ar_list.FIRST..v_ar_list.LAST LOOP
 			
 			EXECUTE IMMEDIATE'
-			UPDATE PKD.'|| T08_TABLE_NAME_AR ||' b SET '|| v_ar_list(d) ||'  =
+			UPDATE PKD19.'|| T08_TABLE_NAME_AR ||' b SET '|| v_ar_list(d) ||'  =
 			(SELECT a.'|| v_ar_list(d) ||'
-			FROM PKD.'|| T03_TABLE_NAME_AR ||' a
+			FROM PKD19.'|| T03_TABLE_NAME_AR ||' a
 			WHERE a.AGAZAT = '''|| LT_INPUT_2 ||'''
 			AND a.ALSZEKTOR = '''|| ALSZEKTOR ||''' 
 			AND a.ESZKOZCSP = '''|| v_eszkozcsp(a) ||''')
@@ -1310,62 +1310,62 @@ END IF;
 
 	-- 3. lépés: a 01 és 09 közöttieket 0-val kezdődőre kell állítani	
 	EXECUTE IMMEDIATE'
-	UPDATE PKD.'|| T08_TABLE_NAME_AR ||' SET AGAZAT = ''01'' WHERE AGAZAT = ''1'' ';
+	UPDATE PKD19.'|| T08_TABLE_NAME_AR ||' SET AGAZAT = ''01'' WHERE AGAZAT = ''1'' ';
 	EXECUTE IMMEDIATE'
-	UPDATE PKD.'|| T08_TABLE_NAME_AR ||' SET AGAZAT = ''02'' WHERE AGAZAT = ''2'' ';
+	UPDATE PKD19.'|| T08_TABLE_NAME_AR ||' SET AGAZAT = ''02'' WHERE AGAZAT = ''2'' ';
 	EXECUTE IMMEDIATE'
-	UPDATE PKD.'|| T08_TABLE_NAME_AR ||' SET AGAZAT = ''03'' WHERE AGAZAT = ''3'' ';
+	UPDATE PKD19.'|| T08_TABLE_NAME_AR ||' SET AGAZAT = ''03'' WHERE AGAZAT = ''3'' ';
 	EXECUTE IMMEDIATE'
-	UPDATE PKD.'|| T08_TABLE_NAME_AR ||' SET AGAZAT = ''04'' WHERE AGAZAT = ''4'' ';
+	UPDATE PKD19.'|| T08_TABLE_NAME_AR ||' SET AGAZAT = ''04'' WHERE AGAZAT = ''4'' ';
 	EXECUTE IMMEDIATE'
-	UPDATE PKD.'|| T08_TABLE_NAME_AR ||' SET AGAZAT = ''05'' WHERE AGAZAT = ''5'' ';
+	UPDATE PKD19.'|| T08_TABLE_NAME_AR ||' SET AGAZAT = ''05'' WHERE AGAZAT = ''5'' ';
 	EXECUTE IMMEDIATE'
-	UPDATE PKD.'|| T08_TABLE_NAME_AR ||' SET AGAZAT = ''06'' WHERE AGAZAT = ''6'' ';
+	UPDATE PKD19.'|| T08_TABLE_NAME_AR ||' SET AGAZAT = ''06'' WHERE AGAZAT = ''6'' ';
 	EXECUTE IMMEDIATE'
-	UPDATE PKD.'|| T08_TABLE_NAME_AR ||' SET AGAZAT = ''07'' WHERE AGAZAT = ''7'' ';
+	UPDATE PKD19.'|| T08_TABLE_NAME_AR ||' SET AGAZAT = ''07'' WHERE AGAZAT = ''7'' ';
 	EXECUTE IMMEDIATE'
-	UPDATE PKD.'|| T08_TABLE_NAME_AR ||' SET AGAZAT = ''08'' WHERE AGAZAT = ''8'' ';
+	UPDATE PKD19.'|| T08_TABLE_NAME_AR ||' SET AGAZAT = ''08'' WHERE AGAZAT = ''8'' ';
 	EXECUTE IMMEDIATE'
-	UPDATE PKD.'|| T08_TABLE_NAME_AR ||' SET AGAZAT = ''09'' WHERE AGAZAT = ''9'' ';
+	UPDATE PKD19.'|| T08_TABLE_NAME_AR ||' SET AGAZAT = ''09'' WHERE AGAZAT = ''9'' ';
 	
 	
 	IF ''|| SZEKTOR ||'' = 'S13' THEN
 
 		 -- KORM + ÖNKORM
 		EXECUTE IMMEDIATE'
-		UPDATE PKD.'|| T08_TABLE_NAME_AR ||' SET EGYEB = ''KVI_ONK'' WHERE AGAZAT = ''841'' AND SZEKTOR = ''S13'' ';
+		UPDATE PKD19.'|| T08_TABLE_NAME_AR ||' SET EGYEB = ''KVI_ONK'' WHERE AGAZAT = ''841'' AND SZEKTOR = ''S13'' ';
 		EXECUTE IMMEDIATE'
-		UPDATE PKD.'|| T08_TABLE_NAME ||' SET EGYEB = ''KVI_ONK'' WHERE AGAZAT = ''841'' AND SZEKTOR = ''S13'' ';
+		UPDATE PKD19.'|| T08_TABLE_NAME ||' SET EGYEB = ''KVI_ONK'' WHERE AGAZAT = ''841'' AND SZEKTOR = ''S13'' ';
 		EXECUTE IMMEDIATE'
-		UPDATE PKD.'|| T08_TABLE_NAME_LT ||' SET EGYEB = ''KVI_ONK'' WHERE AGAZAT = ''841'' AND SZEKTOR = ''S13'' ';
+		UPDATE PKD19.'|| T08_TABLE_NAME_LT ||' SET EGYEB = ''KVI_ONK'' WHERE AGAZAT = ''841'' AND SZEKTOR = ''S13'' ';
 		
 		EXECUTE IMMEDIATE'
-		UPDATE PKD.'|| T08_TABLE_NAME_AR ||' SET EGYEB = ''GAT'' WHERE AGAZAT = ''842'' AND SZEKTOR = ''S13'' ';
+		UPDATE PKD19.'|| T08_TABLE_NAME_AR ||' SET EGYEB = ''GAT'' WHERE AGAZAT = ''842'' AND SZEKTOR = ''S13'' ';
 		EXECUTE IMMEDIATE'
-		UPDATE PKD.'|| T08_TABLE_NAME ||' SET EGYEB = ''GAT'' WHERE AGAZAT = ''842'' AND SZEKTOR = ''S13'' ';
+		UPDATE PKD19.'|| T08_TABLE_NAME ||' SET EGYEB = ''GAT'' WHERE AGAZAT = ''842'' AND SZEKTOR = ''S13'' ';
 		EXECUTE IMMEDIATE'
-		UPDATE PKD.'|| T08_TABLE_NAME_LT ||' SET EGYEB = ''GAT'' WHERE AGAZAT = ''842'' AND SZEKTOR = ''S13'' ';
+		UPDATE PKD19.'|| T08_TABLE_NAME_LT ||' SET EGYEB = ''GAT'' WHERE AGAZAT = ''842'' AND SZEKTOR = ''S13'' ';
 		
 		EXECUTE IMMEDIATE'
-		UPDATE PKD.'|| T08_TABLE_NAME_AR ||' SET EGYEB = ''UTA'' WHERE AGAZAT = ''843'' AND SZEKTOR = ''S13'' ';
+		UPDATE PKD19.'|| T08_TABLE_NAME_AR ||' SET EGYEB = ''UTA'' WHERE AGAZAT = ''843'' AND SZEKTOR = ''S13'' ';
 		EXECUTE IMMEDIATE'
-		UPDATE PKD.'|| T08_TABLE_NAME ||' SET EGYEB = ''UTA'' WHERE AGAZAT = ''843'' AND SZEKTOR = ''S13'' ';
+		UPDATE PKD19.'|| T08_TABLE_NAME ||' SET EGYEB = ''UTA'' WHERE AGAZAT = ''843'' AND SZEKTOR = ''S13'' ';
 		EXECUTE IMMEDIATE'
-		UPDATE PKD.'|| T08_TABLE_NAME_LT ||' SET EGYEB = ''UTA'' WHERE AGAZAT = ''843'' AND SZEKTOR = ''S13'' ';
+		UPDATE PKD19.'|| T08_TABLE_NAME_LT ||' SET EGYEB = ''UTA'' WHERE AGAZAT = ''843'' AND SZEKTOR = ''S13'' ';
 		
 		EXECUTE IMMEDIATE'
-		UPDATE PKD.'|| T08_TABLE_NAME_AR ||' SET EGYEB = ''VIZ'' WHERE AGAZAT = ''844'' AND SZEKTOR = ''S13'' ';
+		UPDATE PKD19.'|| T08_TABLE_NAME_AR ||' SET EGYEB = ''VIZ'' WHERE AGAZAT = ''844'' AND SZEKTOR = ''S13'' ';
 		EXECUTE IMMEDIATE'
-		UPDATE PKD.'|| T08_TABLE_NAME ||' SET EGYEB = ''VIZ'' WHERE AGAZAT = ''844'' AND SZEKTOR = ''S13'' ';
+		UPDATE PKD19.'|| T08_TABLE_NAME ||' SET EGYEB = ''VIZ'' WHERE AGAZAT = ''844'' AND SZEKTOR = ''S13'' ';
 		EXECUTE IMMEDIATE'
-		UPDATE PKD.'|| T08_TABLE_NAME_LT ||' SET EGYEB = ''VIZ'' WHERE AGAZAT = ''844'' AND SZEKTOR = ''S13'' ';
+		UPDATE PKD19.'|| T08_TABLE_NAME_LT ||' SET EGYEB = ''VIZ'' WHERE AGAZAT = ''844'' AND SZEKTOR = ''S13'' ';
 		
 		EXECUTE IMMEDIATE'
-		UPDATE PKD.'|| T08_TABLE_NAME_AR ||' SET EGYEB = ''HM'' WHERE AGAZAT = ''845'' AND SZEKTOR = ''S13'' ';
+		UPDATE PKD19.'|| T08_TABLE_NAME_AR ||' SET EGYEB = ''HM'' WHERE AGAZAT = ''845'' AND SZEKTOR = ''S13'' ';
 		EXECUTE IMMEDIATE'
-		UPDATE PKD.'|| T08_TABLE_NAME ||' SET EGYEB = ''HM'' WHERE AGAZAT = ''845'' AND SZEKTOR = ''S13'' ';
+		UPDATE PKD19.'|| T08_TABLE_NAME ||' SET EGYEB = ''HM'' WHERE AGAZAT = ''845'' AND SZEKTOR = ''S13'' ';
 		EXECUTE IMMEDIATE'
-		UPDATE PKD.'|| T08_TABLE_NAME_LT ||' SET EGYEB = ''HM'' WHERE AGAZAT = ''845'' AND SZEKTOR = ''S13'' ';
+		UPDATE PKD19.'|| T08_TABLE_NAME_LT ||' SET EGYEB = ''HM'' WHERE AGAZAT = ''845'' AND SZEKTOR = ''S13'' ';
 		
 	END IF;
 	

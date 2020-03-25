@@ -20,7 +20,7 @@ BEGIN
 
 procName := 'CFC_UPLOAD';
 
-INSERT INTO PKD.LOGGING (created_on, info, proc_name, message, backtrace)
+INSERT INTO PKD19.LOGGING (created_on, info, proc_name, message, backtrace)
 VALUES (TO_CHAR(CURRENT_TIMESTAMP, 'YYYY.MM.DD HH24:MI:SS.FF'), 'Info', ''|| procName ||'', 'START', '');
 
 	sql_command := 'SELECT COUNT(*) FROM PK.'|| output1 ||'';
@@ -50,7 +50,7 @@ VALUES (TO_CHAR(CURRENT_TIMESTAMP, 'YYYY.MM.DD HH24:MI:SS.FF'), 'Info', ''|| pro
 			ELSE ''2''
 		END,
 		ERTEK 
-		FROM PKD.'|| view1 ||'
+		FROM PKD19.'|| view1 ||'
 		WHERE CFC_NET_GRS = ''net''
 		AND F_V_99 IN (''F'', ''V'')
 		AND EV <= '|| pk_up_max_year ||'))
@@ -69,7 +69,7 @@ VALUES (TO_CHAR(CURRENT_TIMESTAMP, 'YYYY.MM.DD HH24:MI:SS.FF'), 'Info', ''|| pro
 			ELSE ''2''
 		END,
 		ERTEK 
-		FROM PKD.'|| view2 ||'
+		FROM PKD19.'|| view2 ||'
 		WHERE CFC_NET_GRS = ''grs''
 		AND F_V_99 IN (''F'', ''V'')
 		AND EV <= '|| pk_up_max_year ||')
@@ -84,7 +84,7 @@ VALUES (TO_CHAR(CURRENT_TIMESTAMP, 'YYYY.MM.DD HH24:MI:SS.FF'), 'Info', ''|| pro
 			ELSE ''2''
 		END,
 		a.SZEKTOR, a.ERTEK, b.ERTEK
-		FROM PKD.'|| view3 ||' a INNER JOIN PKD.'|| view3 ||' b
+		FROM PKD19.'|| view3 ||' a INNER JOIN PKD19.'|| view3 ||' b
 		ON a.EV = b.EV AND a.F_V_99 = b.F_V_99 AND a.SZEKTOR = b.SZEKTOR AND a.MP102 = b.MP102
 		WHERE a.CFC_NET_GRS = ''net'' AND b.CFC_NET_GRS = ''grs''
 		AND a.F_V_99 IN (''F'', ''V'')
@@ -97,7 +97,7 @@ VALUES (TO_CHAR(CURRENT_TIMESTAMP, 'YYYY.MM.DD HH24:MI:SS.FF'), 'Info', ''|| pro
 	END IF; 
 
 
-INSERT INTO PKD.LOGGING (created_on, info, proc_name, message, backtrace)
+INSERT INTO PKD19.LOGGING (created_on, info, proc_name, message, backtrace)
 VALUES (TO_CHAR(CURRENT_TIMESTAMP, 'YYYY.MM.DD HH24:MI:SS.FF'), 'Info', ''|| procName ||'', 'STOP', '');	
 	
 END CFC_UPLOAD;

@@ -41,14 +41,14 @@ v_out_table := ''|| v_lanc ||'';
 		IF v=1 THEN
 	
 	EXECUTE IMMEDIATE'
-	TRUNCATE TABLE PKD.'|| v_out_table ||'
+	TRUNCATE TABLE PKD19.'|| v_out_table ||'
 	'
 	;
 	
 		ELSE 
 		
 	EXECUTE IMMEDIATE'
-	CREATE TABLE PKD.'|| v_out_table ||'
+	CREATE TABLE PKD19.'|| v_out_table ||'
 	(	"SZEKTOR" VARCHAR2(26 BYTE), 
 	"ALSZEKTOR" VARCHAR2(26 BYTE), 
 	"ESZKOZCSP" VARCHAR2(26 BYTE), 
@@ -85,7 +85,7 @@ v_out_table := ''|| v_lanc ||'';
 	
 	-- lánc tábla kialakítása -- csak 2016_1999-ig, onnantól átszedjük a GFCF_AR táblából az értéket
 	EXECUTE IMMEDIATE'
-	INSERT INTO PKD.'|| v_out_table ||' (SZEKTOR, ALSZEKTOR, ESZKOZCSP, AGAZAT, EGYEB, Y1996_1995, Y1997_1996, Y1998_1997, Y1999_1998, Y2000_1999, Y2001_2000, Y2002_2001, Y2003_2002, Y2004_2003, Y2005_2004, Y2006_2005, Y2007_2006, Y2008_2007, Y2009_2008, Y2010_2009, Y2011_2010, Y2012_2011, Y2013_2012, Y2014_2013, Y2015_2014, Y2016_2015)
+	INSERT INTO PKD19.'|| v_out_table ||' (SZEKTOR, ALSZEKTOR, ESZKOZCSP, AGAZAT, EGYEB, Y1996_1995, Y1997_1996, Y1998_1997, Y1999_1998, Y2000_1999, Y2001_2000, Y2002_2001, Y2003_2002, Y2004_2003, Y2005_2004, Y2006_2005, Y2007_2006, Y2008_2007, Y2009_2008, Y2010_2009, Y2011_2010, Y2012_2011, Y2013_2012, Y2014_2013, Y2015_2014, Y2016_2015)
 	SELECT SZEKTOR, ALSZEKTOR, ESZKOZCSP, AGAZAT, EGYEB,
 	Y1996_1999 / Y1995_1999, 
 	Y1997_1999 / Y1996_1999, 
@@ -111,7 +111,7 @@ v_out_table := ''|| v_lanc ||'';
 --	Y2017_1999 / Y2016_1999
 
 	
-	FROM PKD.'|| v_ar_table ||' 
+	FROM PKD19.'|| v_ar_table ||' 
 	'
 	;
 		
@@ -119,56 +119,56 @@ v_out_table := ''|| v_lanc ||'';
 -- fegyver (AN114) esetében az AR_ALL_LANC értékeit felül kell írni 2013 és 2016 között a következő értékekkel
 
 	EXECUTE IMMEDIATE'
-	UPDATE PKD.'|| v_out_table ||' 
+	UPDATE PKD19.'|| v_out_table ||' 
 	SET Y2013_2012 = ''0.99178371''
 	WHERE SZEKTOR = ''AN114'' AND AGAZAT IN (''841'', ''842'', ''843'', ''844'', ''845'')
 	'
 	;
 	
 	EXECUTE IMMEDIATE'
-	UPDATE PKD.'|| v_out_table ||' 
+	UPDATE PKD19.'|| v_out_table ||' 
 	SET Y2013_2012 = ''1.017313949''
 	WHERE SZEKTOR = ''AN114'' AND AGAZAT = ''846''
 	'
 	;
 	
 	EXECUTE IMMEDIATE'
-	UPDATE PKD.'|| v_out_table ||' 
+	UPDATE PKD19.'|| v_out_table ||' 
 	SET Y2014_2013 = ''0.9518''
 	WHERE SZEKTOR = ''AN114'' AND AGAZAT IN (''841'', ''842'', ''843'', ''844'', ''845'')
 	'
 	;
 	
 	EXECUTE IMMEDIATE'
-	UPDATE PKD.'|| v_out_table ||' 
+	UPDATE PKD19.'|| v_out_table ||' 
 	SET Y2014_2013 = ''1.0508''
 	WHERE SZEKTOR = ''AN114'' AND AGAZAT = ''846''
 	'
 	;
 	
 	EXECUTE IMMEDIATE'
-	UPDATE PKD.'|| v_out_table ||' 
+	UPDATE PKD19.'|| v_out_table ||' 
 	SET Y2015_2014 = ''0.993523577''
 	WHERE SZEKTOR = ''AN114'' AND AGAZAT IN (''841'', ''842'', ''843'', ''844'', ''845'')
 	'
 	;
 	
 	EXECUTE IMMEDIATE'
-	UPDATE PKD.'|| v_out_table ||' 
+	UPDATE PKD19.'|| v_out_table ||' 
 	SET Y2015_2014 = ''1.009995876''
 	WHERE SZEKTOR = ''AN114'' AND AGAZAT = ''846''
 	'
 	;
 	
 	EXECUTE IMMEDIATE'
-	UPDATE PKD.'|| v_out_table ||' 
+	UPDATE PKD19.'|| v_out_table ||' 
 	SET Y2016_2015 = ''0.986593281''
 	WHERE SZEKTOR = ''AN114'' AND AGAZAT IN (''841'', ''842'', ''843'', ''844'', ''845'')
 	'
 	;
 	
 	EXECUTE IMMEDIATE'
-	UPDATE PKD.'|| v_out_table ||' 
+	UPDATE PKD19.'|| v_out_table ||' 
 	SET Y2016_2015 = ''1.02876703''
 	WHERE SZEKTOR = ''AN114'' AND AGAZAT = ''846''
 	'

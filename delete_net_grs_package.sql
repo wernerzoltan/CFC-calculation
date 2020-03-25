@@ -233,15 +233,15 @@ FOR b IN v_out_eszkozcsp.FIRST..v_out_eszkozcsp.LAST LOOP
 
 		EXIT WHEN ''|| v_out_eszkozcsp(b) ||'' = 'BREAK';
 		
-		SELECT COUNT(*) INTO v FROM  all_tables WHERE OWNER = 'PKD' AND TABLE_NAME LIKE UPPER(''|| v_szektor ||'_'|| v_out_alszektor(x) ||'_'|| v_out_name(b) ||'_%');
+		SELECT COUNT(*) INTO v FROM  all_tables WHERE OWNER = 'PKD19' AND TABLE_NAME LIKE UPPER(''|| v_szektor ||'_'|| v_out_alszektor(x) ||'_'|| v_out_name(b) ||'_%');
 		IF v > 0 THEN
 
-		SELECT TABLE_NAME INTO deleteTable FROM (SELECT TABLE_NAME FROM all_tables WHERE OWNER = 'PKD' AND TABLE_NAME LIKE UPPER(''|| v_szektor ||'_'|| v_out_alszektor(x) ||'_'|| v_out_name(b) ||'_%') ORDER BY TABLE_NAME desc) WHERE ROWNUM = 1;
+		SELECT TABLE_NAME INTO deleteTable FROM (SELECT TABLE_NAME FROM all_tables WHERE OWNER = 'PKD19' AND TABLE_NAME LIKE UPPER(''|| v_szektor ||'_'|| v_out_alszektor(x) ||'_'|| v_out_name(b) ||'_%') ORDER BY TABLE_NAME desc) WHERE ROWNUM = 1;
 
 		DBMS_OUTPUT.put_line(deleteTable);
 
 		EXECUTE IMMEDIATE'
-		DELETE FROM PKD.'|| deleteTable ||'
+		DELETE FROM PKD19.'|| deleteTable ||'
 		WHERE OUTPUT IN (''grs'', ''net'')
 		'
 		;

@@ -1,5 +1,5 @@
 /*
-CREATE TABLE PKD.OUTPUT_KULONSBEG
+CREATE TABLE PKD19.OUTPUT_KULONSBEG
 ("ALSZEKTOR" VARCHAR2(26 BYTE), 
 	"AGAZAT" VARCHAR2(26 BYTE), 
 		"EV" VARCHAR2(20 BYTE), 
@@ -21,16 +21,16 @@ v_original := 'C_OUTPUT_PROBA';
 v_modified := 'C_OUTPUT_P_FINAL';
 
 EXECUTE IMMEDIATE'
-DELETE FROM PKD.'|| v_kulonbseg ||' 
+DELETE FROM PKD19.'|| v_kulonbseg ||' 
 '
 ;
 
 EXECUTE IMMEDIATE'
-insert into PKD.'|| v_kulonbseg ||' 
+insert into PKD19.'|| v_kulonbseg ||' 
 (select ALSZEKTOR, AGAZAT, EV, F_V_99, CFC_NET_GRS FROM 
-(select *  from PKD.'|| v_original ||'
+(select *  from PKD19.'|| v_original ||'
 minus
-select * from PKD.'|| v_modified ||'))
+select * from PKD19.'|| v_modified ||'))
 '
 ;
 
